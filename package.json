@@ -5,6 +5,6 @@
   "type": "module",
   "packageManager": "pnpm@11.25.0",
   "engines": { "node": ">=22" },
-  "scripts": { "assets": "node tools/prepare-assets.mjs", "verify-assets": "node tools/verify-assets.mjs" },
+  "scripts": { "assets": "node tools/prepare-assets.mjs && python tools/prepare-face-assets.py", "verify-assets": "node tools/verify-assets.mjs" },
   "dependencies": { "@techstark/opencv-js": "5.0.0-release.1", "sharp": "0.35.5" }
 }

@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "faces": [
+    "idle",
+    "sit_1",
+    "sit_2",
+    "peek_left",
+    "peek_right",
+    "bottom"
+  ],
+  "wavDurationMs": 2000,
+  "wavOriginalBytesPreserved": true,
+  "wavSha256": "069645553d635de68e958afca3a99f999f70e7352caf5f923b30a9136864949e",
+  "androidAudioStoredUncompressed": true,
+  "androidRigMatchesWindows": true,
+  "androidSigningCertificateUnchanged": true,
+  "csharpFacialChecks": 614453,
+  "javaFacialTimelineChecks": 111,
+  "androidDeviceUiTested": false
+}

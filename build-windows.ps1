@@ -13,6 +13,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Windows compilation failed.' }
 $manifest = Get-Content -LiteralPath 'assets/derived/manifest.json' -Raw -Encoding UTF8 | ConvertFrom-Json
 $keep = New-Object 'System.Collections.Generic.HashSet[string]'
 [void]$keep.Add('manifest.json')
+[void]$keep.Add('face.json')
+[void]$keep.Add('audio/andi.wav')
 foreach($pose in $manifest.poses.PSObject.Properties) { [void]$keep.Add($pose.Value.file) }
 foreach($clip in $manifest.clips) { foreach($file in $clip.files) { [void]$keep.Add($file) } }
 for($gx=0;$gx -lt 5;$gx++){for($gy=0;$gy -lt 5;$gy++){[void]$keep.Add("gaze/$($gx)_$($gy).png")}}
@@ -31,6 +33,10 @@ if ($Test) {
     if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
     & 'build/CoreTests.exe' (Join-Path $PSScriptRoot 'assets/derived')
     if ($LASTEXITCODE -ne 0) { throw 'Core tests failed.' }
+    & $compiler /nologo /optimize+ /platform:x64 /target:exe /out:build/FaceTests.exe @references @shared (Join-Path $PSScriptRoot 'tests/FaceTests.cs')
+    if ($LASTEXITCODE -ne 0) { throw 'Facial test compilation failed.' }
+    & 'build/FaceTests.exe' (Join-Path $PSScriptRoot 'assets/derived') (Join-Path $PSScriptRoot 'build/face-tests')
+    if ($LASTEXITCODE -ne 0) { throw 'Facial tests failed.' }
 }
 if ($NativeTest) {
     $probe = Start-Process -FilePath (Join-Path $PSScriptRoot 'dist/windows/奶蛙.exe') -ArgumentList @('--smoke-test','--data-dir',('"' + (Join-Path $PSScriptRoot 'build/native-test') + '"')) -WindowStyle Hidden -PassThru

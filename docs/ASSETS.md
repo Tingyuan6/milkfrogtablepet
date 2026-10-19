@@ -10,6 +10,10 @@
 
 ## 派生过程
 
+V0.2 面部动画：`assets/source/faces.json` 标注六种稳定姿态的眼部椭圆、嘴巴位置与角度；`tools/prepare-face-assets.py` 将用户提供的 `andi.wav` 原样复制到运行资源，并每10ms分析20–30ms窗口的音量与高频变化，输出 `face.json`。Windows读取实际音频设备播放位置，Android读取MediaPlayer当前位置，驱动平滑开合与圆唇；口型停止后渐闭。原角色通过局部纹理采样、眼睑遮罩与带阴影的口腔在程序画布上连续补帧，保持透明轮廓与身体像素。闭眼80ms、停留25ms、睁眼135ms，三秒一个周期；交互或姿态过渡会重置待机计时。主观口型与眼睑自然度仍需结合设备和显示大小验收。
+
+语音使用用户上传的完整两秒PCM WAV，本地播放。声音同步接口依据 [Windows音频播放位置](https://learn.microsoft.com/en-us/windows/win32/api/mmeapi/nf-mmeapi-waveoutgetposition) 和 [Android MediaPlayer](https://developer.android.com/reference/android/media/MediaPlayer#getCurrentPosition())。原文件SHA256保存在运行清单中。
+
 1. 通过 sharp 解码完整GIF画面，保留37帧及不均匀时长，共4390ms；不按源无限循环设置重复播放。
 2. 归一化中间关键姿态，去除孤立/异常边缘颜色，按相同逻辑坐标对齐接触下沿。
 3. 以轮廓和纵向标志对应建立几何中间状态，结合双向 Farneback 光流生成小幅补帧。大动作经过关键姿态，避免直接从两个相差很大的端点硬变形。

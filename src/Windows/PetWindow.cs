@@ -15,7 +15,9 @@ namespace Naifrog.Windows
     public sealed class PetWindow : Form
     {
         readonly Assets assets;
-        readonly Gaze gaze;
+        readonly FaceRenderer face;
+        readonly FaceMotion faceMotion;
+        readonly SpeechPlayer speech;
         readonly Settings settings;
         readonly string dataDirectory;
         readonly Timer timer=new Timer();
@@ -35,6 +37,7 @@ namespace Naifrog.Windows
         public int ProbeIgnoredInputs { get; private set; }
         LayoutMode candidate;
         string drawnKey;
+        string drawnFace="",mouthPoseDown;
         double drawnScale=-1;
         Bitmap surface;
         public readonly PetController Controller;
@@ -46,7 +49,7 @@ namespace Naifrog.Windows
         public PetWindow(Assets assets,string dataDirectory,bool probe)
         {
             this.assets=assets;this.dataDirectory=dataDirectory;probeMode=probe;settings=probe?new Settings():Settings.Read(dataDirectory);
-            gazeEnabled=settings.Gaze;Controller=new PetController(assets,assets.Manifest.sway.durationsMs);gaze=new Gaze(assets.Get("idle"),assets.Manifest.eyes);
+            gazeEnabled=settings.Gaze;Controller=new PetController(assets,assets.Manifest.sway.durationsMs);face=new FaceRenderer(assets);faceMotion=new FaceMotion(face.Rig.speech.samples,face.Rig.speech.stepMs);speech=new SpeechPlayer(Path.Combine(assets.Root,face.Rig.speech.file));
             AutoScaleMode=AutoScaleMode.None;FormBorderStyle=FormBorderStyle.None;ShowInTaskbar=false;TopMost=true;StartPosition=FormStartPosition.Manual;Text="奶蛙";
             SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint,true);
             var work=Screen.PrimaryScreen.WorkingArea;dpi=Native.DpiAt(work.Left+work.Width/2,work.Top+work.Height/2);scale=settings.Scale*dpi;
@@ -101,26 +104,30 @@ namespace Naifrog.Windows
             if(gesture.Down)Drag(cursor,now);
             Controller.Advance(dt);
             if(probeMode&&(lastProbeRevision!=Controller.Revision||lastProbeVisual!=Controller.VisualKey)){Trace("tick dt="+dt.ToString("F1"));lastProbeRevision=Controller.Revision;lastProbeVisual=Controller.VisualKey;}
-            bool eyeChanged=gaze.Advance((cursor.X-x)/scale,(cursor.Y-y)/scale,gazeEnabled&&Controller.VisualKey=="idle",dt);
+            string visual=Controller.VisualKey;
+            face.Advance(visual,(cursor.X-x)/scale,(cursor.Y-y)/scale,gazeEnabled,dt);
+            if(!face.Has(visual))speech.Stop();
+            faceMotion.Advance(dt,face.Has(visual)&&!gesture.Down&&!moving,speech.PositionMs,speech.Playing);
+            bool eyeChanged=face.Stamp(faceMotion.Blink,faceMotion.Mouth,faceMotion.Round)!=drawnFace;
             if(moving&&!gesture.Down)
             {
                 double t=Math.Min(1,(now-moveAt)/180),smooth=t*t*(3-2*t);x=startX+(moveX-startX)*smooth;y=startY+(moveY-startY)*smooth;
                 if(t>=1){moving=false;Save();}MoveNative();
             }
-            Draw(eyeChanged&&Controller.VisualKey=="idle");
-            timer.Interval=Controller.InTransition||Controller.IsSwaying||gesture.Down||moving||eyeChanged?16:75;
+            Draw(eyeChanged);
+            timer.Interval=Controller.InTransition||Controller.IsSwaying||gesture.Down||moving||eyeChanged||speech.Playing||faceMotion.Blink>0||faceMotion.Mouth>0?16:32;
         }
         void Draw(bool force)
         {
-            string key=Controller.VisualKey;if(!force&&key==drawnKey&&Math.Abs(scale-drawnScale)<.001)return;
-            var watch=Stopwatch.StartNew();Bitmap frame=key=="idle"?gaze.Render():assets.Get(key);
+            string key=Controller.VisualKey,stamp=face.Stamp(faceMotion.Blink,faceMotion.Mouth,faceMotion.Round);if(!force&&key==drawnKey&&stamp==drawnFace&&Math.Abs(scale-drawnScale)<.001)return;
+            var watch=Stopwatch.StartNew();Bitmap frame=face.Render(key,faceMotion.Blink,faceMotion.Mouth,faceMotion.Round);
             int side=Math.Max(80,(int)Math.Round(320*scale));if(surface==null||surface.Width!=side){if(surface!=null)surface.Dispose();surface=new Bitmap(side,side,PixelFormat.Format32bppPArgb);}
             using(var g=System.Drawing.Graphics.FromImage(surface))
             {
                 g.CompositingMode=CompositingMode.SourceCopy;g.Clear(Color.Transparent);g.InterpolationMode=InterpolationMode.HighQualityBicubic;g.PixelOffsetMode=PixelOffsetMode.HighQuality;
                 g.DrawImage(frame,new Rectangle(0,0,side,side),0,0,320,320,GraphicsUnit.Pixel);
             }
-            Native.Present(Handle,surface,(int)Math.Round(x),(int)Math.Round(y));drawnKey=key;drawnScale=scale;PresentCount++;
+            Native.Present(Handle,surface,(int)Math.Round(x),(int)Math.Round(y));drawnKey=key;drawnFace=stamp;drawnScale=scale;PresentCount++;
             if(PetController.IsSway(key))PresentedSway.Add(key);watch.Stop();if(PaintTimes.Count<10000)PaintTimes.Add(watch.Elapsed.TotalMilliseconds);
         }
         void PointerDown(object sender,MouseEventArgs e)
@@ -128,12 +135,13 @@ namespace Naifrog.Windows
             Trace("down "+e.Button+" "+e.X+","+e.Y);
             if(e.Button==MouseButtons.Right){menu.Show(Cursor.Position);return;}if(e.Button!=MouseButtons.Left)return;
             Native.Point p=new Native.Point((int)Math.Round(x)+e.X,(int)Math.Round(y)+e.Y);gesture.Begin(p.X,p.Y,4*dpi);grabX=(p.X-x)/scale;grabY=(p.Y-y)/scale;bellyDown=HitRegions.Belly(grabX,grabY);moving=false;Capture=true;dock.Reset();
+            faceMotion.Touch();mouthPoseDown=face.HitMouth(Controller.VisualKey,grabX,grabY)?Controller.VisualKey:null;
         }
         void PointerMove(object sender,MouseEventArgs e){if(gesture.Down){Native.Point p;ReadCursor(out p);Drag(p,clock.Elapsed.TotalMilliseconds);}}
         bool ReadCursor(out Native.Point p){if(probeMode&&ProbeCursor.HasValue){p=ProbeCursor.Value;return true;}return Native.GetCursorPos(out p);}
         void Drag(Native.Point p,double now)
         {
-            if(gesture.Move(p.X,p.Y))Controller.BeginDrag();if(!gesture.Dragging)return;
+            if(gesture.Move(p.X,p.Y)){speech.Stop();faceMotion.Touch();Controller.BeginDrag();}if(!gesture.Dragging)return;
             UpdateDpi(p.X,p.Y);x=p.X-grabX*scale;y=p.Y-grabY*scale;MoveNative();
             var work=Screen.FromPoint(new Point(p.X,p.Y)).WorkingArea;
             var body=new Box(x+86*scale,y+30*scale,x+234*scale,y+290*scale);
@@ -147,7 +155,15 @@ namespace Naifrog.Windows
             bool dragged=gesture.Dragging;bool click=gesture.End();Capture=false;
             Native.Point p=new Native.Point((int)Math.Round(x)+e.X,(int)Math.Round(y)+e.Y);
             if(dragged){var work=Screen.FromPoint(new Point(p.X,p.Y)).WorkingArea;candidate=dock.Drop(new Box(x+86*scale,y+30*scale,x+234*scale,y+290*scale),new Box(work.Left,work.Top,work.Right,work.Bottom),dpi);Controller.SetLayout(candidate);RecoverPosition(true);Save();}
-            else if(click)Controller.Tap(bellyDown&&HitRegions.Belly((p.X-x)/scale,(p.Y-y)/scale));
+            else if(click)
+            {
+                faceMotion.Touch();
+                if(mouthPoseDown==Controller.VisualKey&&face.HitMouth(Controller.VisualKey,(p.X-x)/scale,(p.Y-y)/scale))
+                {
+                    if(!speech.Play())tray.ShowBalloonTip(2500,"奶蛙","暂时无法播放语音，请检查声音输出设备。",ToolTipIcon.Info);
+                }
+                else{speech.Stop();Controller.Tap(bellyDown&&HitRegions.Belly((p.X-x)/scale,(p.Y-y)/scale));}
+            }
         }
         void MoveNative(){if(IsHandleCreated)Native.SetWindowPos(Handle,IntPtr.Zero,(int)Math.Round(x),(int)Math.Round(y),0,0,0x1|0x4|0x10);}
         void UpdateDpi(int px,int py)
@@ -179,6 +195,12 @@ namespace Naifrog.Windows
         public void PositionForProbe(int px,int py){x=px;y=py;dpi=Native.DpiAt(px,py);scale=dpi;Draw(true);}
         public void SaveSurface(string file){surface.Save(file);}
         public void GazeForProbe(bool enabled){gazeEnabled=enabled;}
+        public void ResetFaceForProbe(){faceMotion.Touch();}
+        public double FaceBlink {get{return faceMotion.Blink;}}
+        public double FaceMouth {get{return faceMotion.Mouth;}}
+        public double FaceGazeX {get{return face.X;}}
+        public bool SpeechPlaying {get{return speech.Playing;}}
+        public double SpeechPosition {get{return speech.PositionMs;}}
         void Trace(string action){if(probeMode)ProbeTrace.Add(clock.Elapsed.TotalMilliseconds.ToString("F1")+" "+action+" state="+Controller.Status+" desired="+Controller.Desired+" rev="+Controller.Revision+" originalMs="+Controller.OriginalTimePlayed.ToString("F1"));}
         void Save()
         {
@@ -190,7 +212,7 @@ namespace Naifrog.Windows
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             closing=true;timer.Stop();timer.Dispose();gesture.Cancel();Save();Microsoft.Win32.SystemEvents.DisplaySettingsChanged-=DisplayChanged;
-            tray.Visible=false;tray.Dispose();menu.Dispose();gaze.Dispose();if(surface!=null)surface.Dispose();base.OnFormClosed(e);
+            tray.Visible=false;tray.Dispose();menu.Dispose();speech.Dispose();face.Dispose();if(surface!=null)surface.Dispose();base.OnFormClosed(e);
         }
     }
 }

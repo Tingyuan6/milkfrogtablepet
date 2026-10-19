@@ -29,7 +29,7 @@ namespace Naifrog.Windows
             using(var form=new Backdrop { AutoScaleMode=AutoScaleMode.None,FormBorderStyle=FormBorderStyle.None,ShowInTaskbar=false,TopMost=true,StartPosition=FormStartPosition.Manual,Location=new Point(px,py),Size=new Size(side,side),BackColor=Color.FromArgb(177,195,209) })
             {
                 Action write=delegate { File.WriteAllText(file,new JavaScriptSerializer().Serialize(new {handle=form.Handle.ToInt64(),clicks=form.Clicks})); };
-                form.Shown+=delegate {write();};form.MouseUp+=delegate {form.Clicks++;write();};var timeout=new System.Windows.Forms.Timer {Interval=20000};timeout.Tick+=delegate{form.Close();};timeout.Start();Application.Run(form);timeout.Dispose();
+                form.Shown+=delegate {write();};form.MouseUp+=delegate {form.Clicks++;write();};var timeout=new System.Windows.Forms.Timer {Interval=45000};timeout.Tick+=delegate{form.Close();};timeout.Start();Application.Run(form);timeout.Dispose();
             }
             return 0;
         }
@@ -82,24 +82,37 @@ namespace Naifrog.Windows
                     bool returns=pet.Controller.VisualKey=="idle";int originals=pet.PresentedSway.Count;
                     Pump(250);
                     using(var capture=new Bitmap(side,side)){using(var g=System.Drawing.Graphics.FromImage(capture))g.CopyFromScreen(px,py,0,0,capture.Size);capture.Save(Path.Combine(data,"windows-native.png"));}
-                    pet.GazeForProbe(false);Pump(1300);int settled=pet.PresentCount;Pump(1000);int idleDraws=pet.PresentCount-settled;
+                    pet.GazeForProbe(false);Pump(1300);pet.ResetFaceForProbe();Pump(100);int settled=pet.PresentCount;Pump(1000);int idleDraws=pet.PresentCount-settled;
                     ClickAt(sx(200),sy(206));Pump(900);ClickAt(sx(200),sy(206));Pump(650);bool cancels=pet.Controller.VisualKey=="idle";
+                    Native.Point mouth=BodyPoint(pet,160,69);ClickAt(mouth.X,mouth.Y);Pump(200);
+                    bool speechStarts=pet.SpeechPlaying,mediaAdvances=pet.SpeechPosition>80;
+                    ClickAt(mouth.X,mouth.Y);bool replayRestarts=pet.SpeechPlaying&&pet.SpeechPosition<180;
+                    double maxMouth=0;var lipLevels=new HashSet<int>();
+                    for(int i=0;i<45;i++){Pump(50);maxMouth=Math.Max(maxMouth,pet.FaceMouth);lipLevels.Add((int)Math.Round(pet.FaceMouth*20));}
+                    Pump(250);bool mouthCloses=!pet.SpeechPlaying&&pet.FaceMouth<.01;
+                    pet.ResetFaceForProbe();Pump(2900);double maxBlink=0;var blinkLevels=new HashSet<int>();
+                    for(int i=0;i<40;i++){Pump(15);maxBlink=Math.Max(maxBlink,pet.FaceBlink);if(pet.FaceBlink>0&&pet.FaceBlink<1)blinkLevels.Add((int)Math.Round(pet.FaceBlink*20));}
+                    bool blinkSmooth=maxBlink>.95&&blinkLevels.Count>=3;
                     Point freeStart=pet.CanvasOrigin;Native.Point grab=BodyPoint(pet,160,166);
                     DragTo(pet,new Native.Point(grab.X+90,grab.Y-60),160,166);
                     bool dragWithoutClick=pet.Controller.Desired=="idle"&&pet.Controller.Layout==Core.LayoutMode.Free&&Math.Abs(pet.CanvasOrigin.X-freeStart.X-90)<=1&&Math.Abs(pet.CanvasOrigin.Y-freeStart.Y+60)<=1;
                     DragTo(pet,new Native.Point(work.Left+20,work.Top+work.Height/2),160,166);
                     bool leftDock=pet.Controller.VisualKey=="peek_left"&&Math.Abs(pet.CanvasOrigin.X+114*pet.LogicalScale-work.Left)<=1;
+                    pet.GazeForProbe(true);pet.ProbeCursor=BodyPoint(pet,215,50);Pump(500);bool leftGaze=pet.FaceGazeX>1;
                     DragTo(pet,new Native.Point(work.Left+work.Width/2,work.Top+work.Height/2),175,110);
                     bool undocks=pet.Controller.VisualKey=="idle"&&pet.Controller.Layout==Core.LayoutMode.Free;
                     DragTo(pet,new Native.Point(work.Left+(int)(work.Width*.65),work.Bottom-20),160,166);
                     bool bottomDock=pet.Controller.VisualKey=="bottom"&&Math.Abs(pet.CanvasOrigin.Y+290*pet.LogicalScale-work.Bottom)<=1;
+                    pet.ProbeCursor=BodyPoint(pet,222,190);Pump(500);bool bottomGaze=pet.FaceGazeX< -1;
                     DragTo(pet,new Native.Point(work.Right-20,work.Top+work.Height/2),210,240);
                     bool rightDock=pet.Controller.VisualKey=="peek_right"&&Math.Abs(pet.CanvasOrigin.X+206*pet.LogicalScale-work.Right)<=1;
+                    pet.ProbeCursor=BodyPoint(pet,100,50);Pump(500);bool rightGaze=pet.FaceGazeX< -1;
                     bool focusKept=Native.GetForegroundWindow()==focused;double[] sorted=pet.PaintTimes.OrderBy(v=>v).ToArray();
                     var report=new {platform=Environment.OSVersion.VersionString,process64=Environment.Is64BitProcess,dpi=Native.DpiAt(work.Left+100,work.Top+100),inputMethod="Win32 messages routed by alpha hit target, controlled cursor source for dragging; no physical pointer injection",excludedProbeInputMessages=pet.ProbeIgnoredInputs,alphaHitOtherProcess=passesOtherProcess,transparentClickRouted=actualPassThrough,bodyHit=bodyHits,bellyStartsSway=clickStarts,originalFramesObserved=originals,originalFramesExpected=37,returnsIdle=returns,secondClickCancels=cancels,dragDoesNotClick=dragWithoutClick,leftDock=leftDock,undocks=undocks,bottomDock=bottomDock,rightDock=rightDock,foregroundPreserved=focusKept,nonActivatingStyle=(Native.GetWindowLongPtr(pet.Handle,-20).ToInt64()&0x08000000)!=0,mouseActivateResponse=SendMessage(pet.Handle,0x21,IntPtr.Zero,IntPtr.Zero).ToInt64(),settledIdleRedrawsPerSecond=idleDraws,paintP95Ms=sorted[(int)(sorted.Length*.95)],presentations=pet.PresentCount,workingSetMB=Process.GetCurrentProcess().WorkingSet64/1048576.0,gdiObjects=Native.GetGuiResources(Process.GetCurrentProcess().Handle,0)};
-                    File.WriteAllText(Path.Combine(data,"windows-native.json"),new JavaScriptSerializer().Serialize(report));pet.Close();
+                    File.WriteAllText(Path.Combine(data,"windows-native.json"),new JavaScriptSerializer().Serialize(report));
+                    File.WriteAllText(Path.Combine(data,"facial-native.json"),new JavaScriptSerializer().Serialize(new {mouthStartsSpeech=speechStarts,voicePositionAdvances=mediaAdvances,speechReplayRestarts=replayRestarts,lipsFollowMedia=lipLevels.Count>=5,maxMouth= maxMouth,mouthCloses=mouthCloses,autoBlinkHasInbetweens=blinkSmooth,blinkLevels=blinkLevels.Count,leftPoseGaze=leftGaze,bottomPoseGaze=bottomGaze,rightPoseGaze=rightGaze,sourceDurationMs=2000}));pet.Close();
                     File.WriteAllLines(Path.Combine(data,"events.txt"),pet.ProbeTrace);
-                    return passesOtherProcess&&actualPassThrough&&bodyHits&&clickStarts&&originals==37&&returns&&cancels&&idleDraws==0&&dragWithoutClick&&leftDock&&undocks&&bottomDock&&rightDock?0:1;
+                    return passesOtherProcess&&actualPassThrough&&bodyHits&&clickStarts&&originals==37&&returns&&cancels&&idleDraws==0&&dragWithoutClick&&leftDock&&undocks&&bottomDock&&rightDock&&speechStarts&&mediaAdvances&&replayRestarts&&lipLevels.Count>=5&&mouthCloses&&blinkSmooth&&leftGaze&&bottomGaze&&rightGaze?0:1;
                 }
             }
             finally {if(child!=null&&!child.HasExited){child.CloseMainWindow();if(!child.WaitForExit(1000))child.Kill();}if(child!=null)child.Dispose();}

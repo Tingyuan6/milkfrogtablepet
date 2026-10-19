@@ -19,11 +19,15 @@ public final class PetView extends View {
     public final PetEngine engine;
     private final AssetStore assets;
     private final Host host;
+    private final FacialRenderer facial;
+    private final FaceMotion faceMotion;
+    private final SpeechPlayback speech;
+    private String mouthPoseDown;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final boolean compact;
     public final float spriteScale;
     private Rect crop = new Rect(86, 30, 234, 290);
-    private float originX, originY, downX, downY, mouseX = 160, mouseY = 53, gazeX, gazeY;
+    private float originX, originY, downX, downY, mouseX = 160, mouseY = 53;
     private int pointer = -1;
     private boolean dragging, bellyDown, look;
     private boolean attached, tickerRunning;
@@ -40,28 +44,25 @@ public final class PetView extends View {
                     float dt = now - previous;
                     previous = now;
                     engine.advance(dt);
-                    float dx = mouseX - 160,
-                            dy = mouseY - 53,
-                            len = (float) Math.hypot(dx, dy),
-                            factor = look ? 1 : 0,
-                            tx = len > 1 ? dx / len * 2 * factor : 0,
-                            ty = len > 1 ? dy / len * 2 * factor : 0,
-                            f = 1 - (float) Math.exp(-dt / 90f);
-                    gazeX += (tx - gazeX) * f;
-                    gazeY += (ty - gazeY) * f;
-                    String key = engine.visual();
-                    if (key.equals("idle")) {
-                        int ix = Math.max(0, Math.min(4, Math.round(gazeX) + 2)),
-                                iy = Math.max(0, Math.min(4, Math.round(gazeY) + 2));
-                        if (ix != 2 || iy != 2) key = "gaze/" + ix + "_" + iy + ".png";
-                    }
+                    String pose = engine.visual();
+                    facial.advance(pose, mouseX, mouseY, look, dt);
+                    if (!facial.has(pose)) speech.stop();
+                    faceMotion.advance(
+                            dt,
+                            facial.has(pose) && pointer < 0,
+                            speech.position(),
+                            speech.playing());
+                    String key =
+                            pose
+                                    + "|"
+                                    + facial.stamp(
+                                            faceMotion.blink, faceMotion.mouth, faceMotion.round);
                     if (!key.equals(drawn)) {
                         drawn = key;
-                        image = assets.get(key);
-                        Rect next =
-                                key.startsWith("gaze/")
-                                        ? assets.bounds("idle")
-                                        : assets.bounds(key);
+                        image =
+                                facial.render(
+                                        pose, faceMotion.blink, faceMotion.mouth, faceMotion.round);
+                        Rect next = assets.bounds(pose);
                         if (!next.equals(crop)) {
                             crop = next;
                             host.frame(new Rect(crop));
@@ -73,10 +74,11 @@ public final class PetView extends View {
                                 this,
                                 engine.animating()
                                                 || pointer >= 0
-                                                || Math.abs(tx - gazeX) > .1
-                                                || Math.abs(ty - gazeY) > .1
+                                                || speech.playing()
+                                                || faceMotion.blink > 0
+                                                || faceMotion.mouth > 0
                                         ? 16
-                                        : 100);
+                                        : 32);
                 }
             };
 
@@ -86,10 +88,17 @@ public final class PetView extends View {
         this.compact = compact;
         this.host = host;
         engine = new PetEngine(assets.clips, assets.durations);
+        try {
+            facial = new FacialRenderer(assets);
+        } catch (Exception error) {
+            throw new IllegalStateException("Missing facial assets", error);
+        }
+        faceMotion = new FaceMotion(facial.speechSamples, facial.speechStep);
+        speech = new SpeechPlayback(context, facial.speechFile);
         spriteScale = getResources().getDisplayMetrics().density * .85f;
         image = assets.get("idle");
         setFocusable(false);
-        setContentDescription("奶蛙，点击肚子互动，拖动移动");
+        setContentDescription("奶蛙，点击嘴巴说话，点击肚子互动，拖动移动");
     }
 
     public void origin(float x, float y) {
@@ -124,6 +133,7 @@ public final class PetView extends View {
         removeCallbacks(tick);
         pointer = -1;
         dragging = false;
+        speech.stop();
         super.onDetachedFromWindow();
     }
 
@@ -152,6 +162,7 @@ public final class PetView extends View {
             pointer = -1;
             dragging = false;
             look = false;
+            speech.stop();
         }
     }
 
@@ -191,6 +202,8 @@ public final class PetView extends View {
             dragging = false;
             lastDragX = lastDragY = 0;
             bellyDown = PetEngine.belly(lx, ly);
+            faceMotion.touch();
+            mouthPoseDown = facial.hitMouth(engine.visual(), lx, ly) ? engine.visual() : null;
             mouseX = lx;
             mouseY = ly;
             look = true;
@@ -225,6 +238,8 @@ public final class PetView extends View {
                             && Math.hypot(dx, dy) >= 8 * getResources().getDisplayMetrics().density;
             if (start) {
                 dragging = true;
+                speech.stop();
+                faceMotion.touch();
                 engine.beginDrag();
             }
             if (dragging) host.drag(dx, dy, start, false);
@@ -236,7 +251,13 @@ public final class PetView extends View {
             if (dragging) host.drag(event.getRawX() - downX, event.getRawY() - downY, false, true);
             else {
                 performClick();
-                engine.tap(bellyDown && PetEngine.belly(lx, ly));
+                faceMotion.touch();
+                if (engine.visual().equals(mouthPoseDown)
+                        && facial.hitMouth(engine.visual(), lx, ly)) speech.play();
+                else {
+                    speech.stop();
+                    engine.tap(bellyDown && PetEngine.belly(lx, ly));
+                }
             }
             pointer = -1;
             look = false;

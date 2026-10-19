@@ -63,7 +63,7 @@ public final class AssetStore {
         }
     }
 
-    private String text(String file) throws Exception {
+    String text(String file) throws Exception {
         try (InputStream in = context.getAssets().open(file)) {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             byte[] buf = new byte[8192];
