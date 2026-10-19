@@ -13,4 +13,8 @@ try {
     if($LASTEXITCODE -ne 0){throw 'Java facial tests failed.'}
     & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' PetPlacementTests
     if($LASTEXITCODE -ne 0){throw 'Android placement tests failed.'}
+    & (Join-Path $Jdk 'bin/javac.exe') -encoding UTF-8 -d 'build/java-tests' 'tools/ApkAssembler.java' 'tests/ApkAssemblerTests.java'
+    if($LASTEXITCODE -ne 0){throw 'APK regression test compilation failed.'}
+    & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' ApkAssemblerTests
+    if($LASTEXITCODE -ne 0){throw 'APK packaging regression tests failed.'}
 } finally { Pop-Location }

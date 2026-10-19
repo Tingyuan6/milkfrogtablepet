@@ -1,0 +1,25 @@
+{
+  "version": "0.2.2",
+  "versionCode": 5,
+  "reportedError": "AssetManager.open: FileNotFoundException poses/idle.png",
+  "rootCause": "Windows aapt2 nested asset ZIP entry names contain backslashes; Android lookup uses forward slashes. Windows Python ZipInfo.filename normalizes these paths and hid the defect in previous checks.",
+  "oldApkMalformedRawPaths": 413,
+  "newApkMalformedRawPaths": 0,
+  "verifiedAssetFiles": 415,
+  "allAssetBytesMatch": true,
+  "rawLocalAndCentralPathsVerifiedByJava": true,
+  "wavStoredUncompressed": true,
+  "packagingRegressionChecks": 7,
+  "javaCoreChecks": 164,
+  "javaFaceChecks": 111,
+  "javaPlacementChecks": 218,
+  "signatureSchemes": [
+    "v2",
+    "v3"
+  ],
+  "certificateSha256": "a1cb339242764aa077e546992a57171172f015c8cada143536ae5480d4989055",
+  "certificateMatches021": true,
+  "apkSha256": "595168efd4a309b5739c7b7942a890ca9049d0fbdb92eacb27387470e9d13d57",
+  "deviceTested": false,
+  "originalPhoneRetestRequired": true
+}

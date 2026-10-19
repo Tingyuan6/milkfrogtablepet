@@ -8,7 +8,7 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT.parent / "outputs"
 OUTPUT.mkdir(exist_ok=True)
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 PREFIX = "奶蛙V" + VERSION
 top = {".gitignore", ".gitattributes", "app.manifest", "README.md", "package.json", "pnpm-lock.yaml",
        "build-windows.ps1", "build-android.ps1", "test-java.ps1"}

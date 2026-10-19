@@ -13,9 +13,9 @@ this is a gift for me as my first project,also for the milk family
 | 你的设备 | 点击下载 |
 | --- | --- |
 | Windows 电脑 | [下载 Windows 版（ZIP）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.2.1/Naifrog-Windows-v0.2.1.zip) |
-| 安卓手机／平板 | [下载 Android 版（APK）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.2.1/Naifrog-Android-v0.2.1.apk) |
+| 安卓手机／平板 | [下载 Android 版（APK）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.2.2/Naifrog-Android-v0.2.2.apk) |
 
-也可以打开[下载页面 Releases](https://github.com/Tingyuan6/milkfrogtablepet/releases/tag/v0.2.1)，找到 **Assets**（下载文件列表），点击对应文件。电脑选名字带 **Windows**、后缀 **.zip** 的文件；安卓选名字带 **Android**、后缀 **.apk** 的文件。**Source code 是源码，普通使用无需下载。**
+也可以打开[下载页面 Releases](https://github.com/Tingyuan6/milkfrogtablepet/releases/tag/v0.2.2)，找到 **Assets**（下载文件列表），点击对应文件。电脑选名字带 **Windows**、后缀 **.zip** 的文件；安卓选名字带 **Android**、后缀 **.apk** 的文件。**Source code 是源码，普通使用无需下载。**
 
 ### Windows 电脑：下载 → 解压 → 打开
 
@@ -29,7 +29,7 @@ this is a gift for me as my first project,also for the milk family
 ### 安卓手机／平板：下载 → 安装 → 打开
 
 1. 用手机／平板的浏览器登录 GitHub，点击上面的 **下载 Android 版（APK）**。
-2. 下载完成后，点击下载通知；也可以打开“文件管理”中的“下载”，找到 **Naifrog-Android-v0.2.1.apk**。
+2. 下载完成后，点击下载通知；也可以打开“文件管理”中的“下载”，找到 **Naifrog-Android-v0.2.2.apk**。
 3. 点击 APK，选择 **安装**。
 4. 如果提示当前浏览器或文件管理器没有安装权限，点击提示里的 **设置**，为这个应用开启 **允许来自此来源的应用**（各品牌文字可能不同），再返回继续安装。安装后可关闭这项权限。
 5. 安装完成，点击 **打开**。先在应用内点击、拖动奶蛙，点击底部输入框体验键盘上方的坐姿。
@@ -37,9 +37,11 @@ this is a gift for me as my first project,also for the milk family
 
 手机版目前支持 **Android**；iPhone／iPad 暂不支持。Android 为测试版，仍需真机验收。
 
-## V0.2.1 安卓启动修复
+## V0.2.2 安卓素材读取修复
 
-修正初始化失败后访问空角色对象、权限状态掩盖加载错误的问题。悬浮窗口实际画出后才隐藏应用内角色；增加“找回应用内奶蛙”和可复制的错误信息。首次位置在布局完成后计算。原问题手机仍需覆盖安装复测，详见[安卓排错步骤](docs/ANDROID-TROUBLESHOOTING.md)。
+修复 Windows SDK 打包时子目录使用反斜杠、导致 Android 找不到 `poses/idle.png` 的问题。图片、补帧和语音路径统一为 APK 标准正斜杠路径。签名后逐项核对全部415个素材的原始ZIP路径和文件内容；旧包中的错误路径会使构建失败，避免再次发布。新增7项打包回归验证。
+
+安卓请下载 **V0.2.2** 并直接覆盖安装，无需卸载。Windows 保持V0.2.1。V0.2.1的错误记录、权限返回续开和找回角色功能保留。仍需要在问题手机上确认显示与悬浮，详见[安卓排错步骤](docs/ANDROID-TROUBLESHOOTING.md)。
 
 ## V0.2 更新
 
@@ -92,7 +94,7 @@ Android 使用 JDK 17、SDK Platform 35 和 Build Tools 35.0.0；无需 Gradle�
 ./test-java.ps1 -Jdk '你的JDK目录'
 ```
 
-产物位于 `dist/android/奶蛙-0.2.1-测试版.apk`，使用本地生成的开发证书。私钥位于 `build/` 并已排除提交；升级同一测试安装时应保留自己的开发证书。`android/` 同时提供标准原生 Android 工程配置，当前直接 SDK 脚本构建路径已验证。
+产物位于 `dist/android/奶蛙-0.2.2-测试版.apk`，使用本地生成的开发证书。私钥位于 `build/` 并已排除提交；升级同一测试安装时应保留自己的开发证书。`android/` 同时提供标准原生 Android 工程配置，直接 SDK 脚本在签名前规范化ZIP路径，并在签名后校验全部素材；构建失败时不要分发产物。
 
 ## 工程说明
 

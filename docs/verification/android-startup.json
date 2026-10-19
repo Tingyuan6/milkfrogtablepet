@@ -1,5 +1,5 @@
 {
-  "version": "0.2.1",
+  "version": "0.2.2",
   "javaEngineChecks": 164,
   "facialTimelineChecks": 111,
   "placementChecks": 218,
@@ -10,6 +10,9 @@
   "validNotificationIconBundled": true,
   "deviceAvailable": false,
   "reportedCrashReproducedOnDevice": false,
-  "originalStackTraceAvailable": false,
-  "deviceRetestRequired": true
+  "originalStackTraceAvailable": true,
+  "deviceRetestRequired": true,
+  "packagingRootCauseConfirmed": true,
+  "rawApkAssetPathsVerified": true,
+  "assetFileChecks": 415
 }
