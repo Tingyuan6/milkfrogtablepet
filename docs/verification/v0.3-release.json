@@ -1,0 +1,20 @@
+{
+  "version": "0.3.0",
+  "androidVersionCode": 6,
+  "androidAssetFilesVerified": 415,
+  "androidRawAssetPathsVerified": true,
+  "androidCertificateUnchanged": true,
+  "androidCertificateSha256": "a1cb339242764aa077e546992a57171172f015c8cada143536ae5480d4989055",
+  "androidApkSha256": "70db647f7571c5545ceacc5e9178df54b48e6a60013556500682873784fbd563",
+  "javaMouthMaterialChecks": 31417,
+  "csharpFaceChecks": 617431,
+  "csharpLaughAndActivationChecks": 16659,
+  "allPlaybackInterruptionPositions": 449,
+  "maxVisualRecoveryMs": 1456,
+  "assetChecks": 7559,
+  "sourceVideoFrames": 411,
+  "playbackFrames": 449,
+  "loopFramesIncludeGetUpAndSeamBridge": true,
+  "actualExplorerDoubleClickManuallyVerified": false,
+  "androidDeviceUiVerified": false
+}

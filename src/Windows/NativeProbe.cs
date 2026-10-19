@@ -56,6 +56,22 @@ namespace Naifrog.Windows
         {
             Route(pet,BodyPoint(pet,grabX,grabY),0x201);Route(pet,destination,0x200);Pump(150);Route(pet,destination,0x202);Pump(750);
         }
+        public static int Monitor(string data)
+        {
+            Directory.CreateDirectory(data);
+            using(var form=new Form())
+            {
+                IntPtr handle=form.Handle;
+                using(var monitor=new ExplorerFileMonitor(form,delegate{},delegate{}))
+                {
+                    for(int n=0;n<60&&!monitor.ShellProbeFinished;n++)Pump(50);
+                    var report=new {hooks=monitor.Available,shell=monitor.ShellMetadataAvailable,finished=monitor.ShellProbeFinished,diagnostic=monitor.Diagnostic};
+                    File.WriteAllText(Path.Combine(data,"monitor.json"),new JavaScriptSerializer().Serialize(report));
+                    Console.WriteLine(new JavaScriptSerializer().Serialize(report));
+                    return monitor.Available&&monitor.ShellMetadataAvailable?0:1;
+                }
+            }
+        }
         public static int Run(Assets assets,string data)
         {
             Directory.CreateDirectory(data);string childFile=Path.Combine(data,"backdrop.json");if(File.Exists(childFile))File.Delete(childFile);
@@ -107,12 +123,20 @@ namespace Naifrog.Windows
                     DragTo(pet,new Native.Point(work.Right-20,work.Top+work.Height/2),210,240);
                     bool rightDock=pet.Controller.VisualKey=="peek_right"&&Math.Abs(pet.CanvasOrigin.X+206*pet.LogicalScale-work.Right)<=1;
                     pet.ProbeCursor=BodyPoint(pet,100,50);Pump(500);bool rightGaze=pet.FaceGazeX< -1;
+                    Point laughHome=pet.CanvasOrigin;
+                    pet.StartLaughterForProbe();Pump(1300);
+                    bool laughStarts=pet.LaughterPhase==Core.LaughPhase.Loop&&pet.LaughterVisual!=null&&pet.LaughSoundPlaying;
+                    pet.StopLaughterForProbe();bool laughAudioStops=!pet.LaughSoundPlaying;Pump(1200);
+                    bool laughRestores=pet.LaughterPhase==Core.LaughPhase.Off&&pet.Controller.VisualKey=="peek_right"&&Math.Abs(pet.CanvasOrigin.X-laughHome.X)<=1&&Math.Abs(pet.CanvasOrigin.Y-laughHome.Y)<=1;
+                    bool monitorAvailable,shellMetadataAvailable;
+                    using(var monitor=new ExplorerFileMonitor(pet,delegate{},delegate{})){monitorAvailable=monitor.Available;for(int n=0;n<40&&!monitor.ShellMetadataAvailable;n++)Pump(50);shellMetadataAvailable=monitor.ShellMetadataAvailable;}
+                    File.WriteAllText(Path.Combine(data,"laugh-native.json"),new JavaScriptSerializer().Serialize(new {reactionStartsFromRightDock=laughStarts,clickStopAudioImmediate=laughAudioStops,restoresOriginalLayoutAndPosition=laughRestores,globalHooksInstallAndDispose=monitorAvailable,shellMetadataApiAvailable=shellMetadataAvailable,triggerMethod="Controlled host activation and cancellation; actual Explorer user double-click is still a manual acceptance item. No hardware input injection."}));
                     bool focusKept=Native.GetForegroundWindow()==focused;double[] sorted=pet.PaintTimes.OrderBy(v=>v).ToArray();
                     var report=new {platform=Environment.OSVersion.VersionString,process64=Environment.Is64BitProcess,dpi=Native.DpiAt(work.Left+100,work.Top+100),inputMethod="Win32 messages routed by alpha hit target, controlled cursor source for dragging; no physical pointer injection",excludedProbeInputMessages=pet.ProbeIgnoredInputs,alphaHitOtherProcess=passesOtherProcess,transparentClickRouted=actualPassThrough,bodyHit=bodyHits,bellyStartsSway=clickStarts,originalFramesObserved=originals,originalFramesExpected=37,returnsIdle=returns,secondClickCancels=cancels,dragDoesNotClick=dragWithoutClick,leftDock=leftDock,undocks=undocks,bottomDock=bottomDock,rightDock=rightDock,foregroundPreserved=focusKept,nonActivatingStyle=(Native.GetWindowLongPtr(pet.Handle,-20).ToInt64()&0x08000000)!=0,mouseActivateResponse=SendMessage(pet.Handle,0x21,IntPtr.Zero,IntPtr.Zero).ToInt64(),settledIdleRedrawsPerSecond=idleDraws,paintP95Ms=sorted[(int)(sorted.Length*.95)],presentations=pet.PresentCount,workingSetMB=Process.GetCurrentProcess().WorkingSet64/1048576.0,gdiObjects=Native.GetGuiResources(Process.GetCurrentProcess().Handle,0)};
                     File.WriteAllText(Path.Combine(data,"windows-native.json"),new JavaScriptSerializer().Serialize(report));
                     File.WriteAllText(Path.Combine(data,"facial-native.json"),new JavaScriptSerializer().Serialize(new {mouthStartsSpeech=speechStarts,voicePositionAdvances=mediaAdvances,speechReplayRestarts=replayRestarts,lipsFollowMedia=lipLevels.Count>=5,maxMouth= maxMouth,mouthCloses=mouthCloses,autoBlinkHasInbetweens=blinkSmooth,blinkLevels=blinkLevels.Count,leftPoseGaze=leftGaze,bottomPoseGaze=bottomGaze,rightPoseGaze=rightGaze,sourceDurationMs=2000}));pet.Close();
                     File.WriteAllLines(Path.Combine(data,"events.txt"),pet.ProbeTrace);
-                    return passesOtherProcess&&actualPassThrough&&bodyHits&&clickStarts&&originals==37&&returns&&cancels&&idleDraws==0&&dragWithoutClick&&leftDock&&undocks&&bottomDock&&rightDock&&speechStarts&&mediaAdvances&&replayRestarts&&lipLevels.Count>=5&&mouthCloses&&blinkSmooth&&leftGaze&&bottomGaze&&rightGaze?0:1;
+                    return passesOtherProcess&&actualPassThrough&&bodyHits&&clickStarts&&originals==37&&returns&&cancels&&idleDraws==0&&dragWithoutClick&&leftDock&&undocks&&bottomDock&&rightDock&&speechStarts&&mediaAdvances&&replayRestarts&&lipLevels.Count>=5&&mouthCloses&&blinkSmooth&&leftGaze&&bottomGaze&&rightGaze&&laughStarts&&laughAudioStops&&laughRestores&&monitorAvailable&&shellMetadataAvailable?0:1;
                 }
             }
             finally {if(child!=null&&!child.HasExited){child.CloseMainWindow();if(!child.WaitForExit(1000))child.Kill();}if(child!=null)child.Dispose();}

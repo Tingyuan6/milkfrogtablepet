@@ -6,8 +6,11 @@ $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 if (!(Test-Path -LiteralPath $compiler)) { throw '.NET Framework 4.8 is required.' }
 New-Item -ItemType Directory -Path 'build','dist/windows/assets' -Force | Out-Null
 if (!(Test-Path -LiteralPath 'assets/derived/manifest.json')) { throw 'Run pnpm install --frozen-lockfile and pnpm run assets first.' }
+if (!(Test-Path -LiteralPath 'assets/windows/laugh.json')) { throw 'Generate the Windows laughter animation first; see README.' }
+$laughManifest=Get-Content -LiteralPath 'assets/windows/laugh.json' -Raw -Encoding UTF8 | ConvertFrom-Json
+if(!$laughManifest.ready -or !$laughManifest.entry -or !$laughManifest.exits){throw 'Laughter resources are not ready. Finish prepare-laugh-bridges.py before building.'}
 $sources = @(Get-ChildItem -LiteralPath 'src/Core','src/Graphics','src/Windows' -Filter '*.cs' -Recurse | ForEach-Object FullName)
-$references = @('/r:System.dll','/r:System.Core.dll','/r:System.Drawing.dll','/r:System.Windows.Forms.dll','/r:System.Web.Extensions.dll')
+$references = @('/r:System.dll','/r:System.Core.dll','/r:System.Drawing.dll','/r:System.Windows.Forms.dll','/r:System.Web.Extensions.dll',('/r:'+(Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/WPF/UIAutomationClient.dll')),('/r:'+(Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/WPF/UIAutomationTypes.dll')),('/r:'+(Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/WPF/WindowsBase.dll')))
 & $compiler /nologo /optimize+ /platform:x64 /target:winexe '/out:dist/windows/奶蛙.exe' /win32manifest:app.manifest /win32icon:assets/naifrog.ico @references @sources
 if ($LASTEXITCODE -ne 0) { throw 'Windows compilation failed.' }
 $manifest = Get-Content -LiteralPath 'assets/derived/manifest.json' -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -19,12 +22,19 @@ foreach($pose in $manifest.poses.PSObject.Properties) { [void]$keep.Add($pose.Va
 foreach($clip in $manifest.clips) { foreach($file in $clip.files) { [void]$keep.Add($file) } }
 for($gx=0;$gx -lt 5;$gx++){for($gy=0;$gy -lt 5;$gy++){[void]$keep.Add("gaze/$($gx)_$($gy).png")}}
 foreach($relative in $keep) { if([IO.Path]::IsPathRooted($relative) -or $relative.Split('/') -contains '..'){throw 'Unsafe asset path.'} }
-foreach($folder in @('assets/derived','dist/windows/assets')) {
+$windowsAssetRoot=(Resolve-Path -LiteralPath 'assets/windows').Path
+foreach($file in Get-ChildItem -LiteralPath $windowsAssetRoot -File -Recurse){$relative=$file.FullName.Substring($windowsAssetRoot.Length+1).Replace('\','/');[void]$keep.Add($relative)}
+foreach($folder in @('dist/windows/assets')) {
     $resolved=(Resolve-Path -LiteralPath $folder).Path
     if(!$resolved.StartsWith($PSScriptRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Asset folder outside project.'}
     foreach($file in Get-ChildItem -LiteralPath $resolved -File -Recurse){$relative=$file.FullName.Substring($resolved.Length+1).Replace('\','/');if(!$keep.Contains($relative)){Remove-Item -LiteralPath $file.FullName}}
 }
-foreach($relative in $keep){$destination=Join-Path 'dist/windows/assets' $relative;New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null;Copy-Item -LiteralPath (Join-Path 'assets/derived' $relative) -Destination $destination -Force}
+foreach($relative in $keep){
+    $destination=Join-Path 'dist/windows/assets' $relative
+    [void][IO.Directory]::CreateDirectory((Join-Path $PSScriptRoot (Split-Path -Parent $destination)))
+    $source=if(Test-Path -LiteralPath (Join-Path 'assets/windows' $relative)){Join-Path 'assets/windows' $relative}else{Join-Path 'assets/derived' $relative}
+    [IO.File]::Copy((Join-Path $PSScriptRoot $source),(Join-Path $PSScriptRoot $destination),$true)
+}
 if (Test-Path -LiteralPath 'assets/naifrog.ico') { Copy-Item -LiteralPath 'assets/naifrog.ico' -Destination 'dist/windows/naifrog.ico' }
 Copy-Item -LiteralPath 'README.md' -Destination 'dist/windows/使用说明.md' -ErrorAction SilentlyContinue
 if ($Test) {
@@ -37,6 +47,11 @@ if ($Test) {
     if ($LASTEXITCODE -ne 0) { throw 'Facial test compilation failed.' }
     & 'build/FaceTests.exe' (Join-Path $PSScriptRoot 'assets/derived') (Join-Path $PSScriptRoot 'build/face-tests')
     if ($LASTEXITCODE -ne 0) { throw 'Facial tests failed.' }
+    & $compiler /nologo /optimize+ /platform:x64 /target:exe /out:build/LaughTests.exe @references @shared (Join-Path $PSScriptRoot 'tests/LaughTests.cs')
+    if ($LASTEXITCODE -ne 0) { throw 'Laugh test compilation failed.' }
+    & 'build/LaughTests.exe' (Join-Path $PSScriptRoot 'dist/windows/assets')
+    if ($LASTEXITCODE -ne 0) { throw 'Laugh tests failed.' }
+
 }
 if ($NativeTest) {
     $probe = Start-Process -FilePath (Join-Path $PSScriptRoot 'dist/windows/奶蛙.exe') -ArgumentList @('--smoke-test','--data-dir',('"' + (Join-Path $PSScriptRoot 'build/native-test') + '"')) -WindowStyle Hidden -PassThru

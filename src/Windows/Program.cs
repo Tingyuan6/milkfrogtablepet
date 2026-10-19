@@ -16,6 +16,7 @@ namespace Naifrog.Windows
             for(int i=0;i<args.Length-1;i++)if(args[i]=="--data-dir")data=Path.GetFullPath(args[++i]);
             try
             {
+                if(args.Length>0&&args[0]=="--monitor-self-test")return NativeProbe.Monitor(data);
                 if(args.Length>0&&args[0]=="--probe-background")return NativeProbe.Background(args);
                 using(var assets=new Assets(Path.Combine(home,"assets")))
                 {

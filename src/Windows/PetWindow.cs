@@ -18,6 +18,15 @@ namespace Naifrog.Windows
         readonly FaceRenderer face;
         readonly FaceMotion faceMotion;
         readonly SpeechPlayer speech;
+        readonly SpeechPlayer laughSound;
+        readonly LaughTimeline laughter;
+        ExplorerFileMonitor fileMonitor;
+        int laughAudioEpoch;
+        bool restoringLaughter;
+        LayoutMode laughHomeLayout;
+        string laughHomePose;
+        double laughHomeX,laughHomeY;
+
         readonly Settings settings;
         readonly string dataDirectory;
         readonly Timer timer=new Timer();
@@ -50,6 +59,8 @@ namespace Naifrog.Windows
         {
             this.assets=assets;this.dataDirectory=dataDirectory;probeMode=probe;settings=probe?new Settings():Settings.Read(dataDirectory);
             gazeEnabled=settings.Gaze;Controller=new PetController(assets,assets.Manifest.sway.durationsMs);face=new FaceRenderer(assets);faceMotion=new FaceMotion(face.Rig.speech.samples,face.Rig.speech.stepMs);speech=new SpeechPlayer(Path.Combine(assets.Root,face.Rig.speech.file));
+            var laughDefinition=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<LaughSequence>(File.ReadAllText(Path.Combine(assets.Root,"laugh.json")));
+            laughter=new LaughTimeline(laughDefinition);laughSound=new SpeechPlayer(Path.Combine(assets.Root,laughDefinition.audio));
             AutoScaleMode=AutoScaleMode.None;FormBorderStyle=FormBorderStyle.None;ShowInTaskbar=false;TopMost=true;StartPosition=FormStartPosition.Manual;Text="奶蛙";
             SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint,true);
             var work=Screen.PrimaryScreen.WorkingArea;dpi=Native.DpiAt(work.Left+work.Width/2,work.Top+work.Height/2);scale=settings.Scale*dpi;
@@ -60,6 +71,9 @@ namespace Naifrog.Windows
             menu.Items.Add("恢复站立",null,delegate { Controller.SetLayout(LayoutMode.Free);RecoverPosition(true); });
             var sizes=new ToolStripMenuItem("显示大小");foreach(double value in new[]{.8,1,1.25,1.5}){double captured=value;sizes.DropDownItems.Add((int)(value*100)+"%",null,delegate { ResizePet(captured); });}menu.Items.Add(sizes);
             var eyeItem=new ToolStripMenuItem("眼睛跟随") { Checked=gazeEnabled,CheckOnClick=true };eyeItem.CheckedChanged+=delegate { gazeEnabled=eyeItem.Checked;settings.Gaze=gazeEnabled;Save(); };menu.Items.Add(eyeItem);
+            var laughItem=new ToolStripMenuItem("打开文件时大笑") { Checked=settings.FileLaughter,CheckOnClick=true };
+            laughItem.CheckedChanged+=delegate { settings.FileLaughter=laughItem.Checked;if(IsHandleCreated)ConfigureFileMonitor();Save(); };menu.Items.Add(laughItem);
+            menu.Items.Add("停止大笑",null,delegate { StopLaughter(); });
             menu.Items.Add(new ToolStripSeparator());menu.Items.Add("退出奶蛙",null,delegate { Close(); });
             tray=new NotifyIcon { Text="奶蛙 · 拖动移动，点击肚子互动",ContextMenuStrip=menu,Visible=!probe };
             string iconFile=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"naifrog.ico");tray.Icon=File.Exists(iconFile)?new Icon(iconFile):SystemIcons.Application;
@@ -71,7 +85,7 @@ namespace Naifrog.Windows
         }
         protected override bool ShowWithoutActivation { get { return true; } }
         protected override CreateParams CreateParams { get { var cp=base.CreateParams;cp.ExStyle|=0x80000|0x80|0x08000000;return cp; } }
-        protected override void OnLoad(EventArgs e){base.OnLoad(e);loading=false;lastTick=clock.Elapsed.TotalMilliseconds;Draw(true);timer.Start();}
+        protected override void OnLoad(EventArgs e){base.OnLoad(e);loading=false;lastTick=clock.Elapsed.TotalMilliseconds;Draw(true);timer.Start();if(!probeMode)ConfigureFileMonitor();}
         protected override void OnPaint(PaintEventArgs e){}
         protected override void OnPaintBackground(PaintEventArgs e){}
         protected override void WndProc(ref Message message)
@@ -102,24 +116,29 @@ namespace Naifrog.Windows
         {
             double now=clock.Elapsed.TotalMilliseconds,dt=now-lastTick;lastTick=now;Native.Point cursor;ReadCursor(out cursor);
             if(gesture.Down)Drag(cursor,now);
+            bool reactionWasActive=laughter.Active;
             Controller.Advance(dt);
+            if(laughter.Phase==LaughPhase.Preparing&&Controller.VisualKey=="idle"&&!moving)laughter.Ready();
+            laughter.Advance(dt,laughter.Phase==LaughPhase.Loop&&laughSound.Playing?laughSound.PositionMs:-1);
+            if(laughter.AudioEpoch!=laughAudioEpoch){laughAudioEpoch=laughter.AudioEpoch;if(laughter.Phase==LaughPhase.Loop)laughSound.Play();}
+            if(reactionWasActive&&!laughter.Active)RestoreAfterLaughter();
             if(probeMode&&(lastProbeRevision!=Controller.Revision||lastProbeVisual!=Controller.VisualKey)){Trace("tick dt="+dt.ToString("F1"));lastProbeRevision=Controller.Revision;lastProbeVisual=Controller.VisualKey;}
-            string visual=Controller.VisualKey;
+            string visual=laughter.VisualKey??Controller.VisualKey;
             face.Advance(visual,(cursor.X-x)/scale,(cursor.Y-y)/scale,gazeEnabled,dt);
             if(!face.Has(visual))speech.Stop();
-            faceMotion.Advance(dt,face.Has(visual)&&!gesture.Down&&!moving,speech.PositionMs,speech.Playing);
+            faceMotion.Advance(dt,!laughter.Active&&face.Has(visual)&&!gesture.Down&&!moving,speech.PositionMs,speech.Playing);
             bool eyeChanged=face.Stamp(faceMotion.Blink,faceMotion.Mouth,faceMotion.Round)!=drawnFace;
             if(moving&&!gesture.Down)
             {
                 double t=Math.Min(1,(now-moveAt)/180),smooth=t*t*(3-2*t);x=startX+(moveX-startX)*smooth;y=startY+(moveY-startY)*smooth;
-                if(t>=1){moving=false;Save();}MoveNative();
+                if(t>=1){moving=false;restoringLaughter=false;Save();}MoveNative();
             }
             Draw(eyeChanged);
-            timer.Interval=Controller.InTransition||Controller.IsSwaying||gesture.Down||moving||eyeChanged||speech.Playing||faceMotion.Blink>0||faceMotion.Mouth>0?16:32;
+            timer.Interval=laughter.Active||Controller.InTransition||Controller.IsSwaying||gesture.Down||moving||eyeChanged||speech.Playing||faceMotion.Blink>0||faceMotion.Mouth>0?16:32;
         }
         void Draw(bool force)
         {
-            string key=Controller.VisualKey,stamp=face.Stamp(faceMotion.Blink,faceMotion.Mouth,faceMotion.Round);if(!force&&key==drawnKey&&stamp==drawnFace&&Math.Abs(scale-drawnScale)<.001)return;
+            string key=laughter.VisualKey??Controller.VisualKey,stamp=face.Stamp(faceMotion.Blink,faceMotion.Mouth,faceMotion.Round);if(!force&&key==drawnKey&&stamp==drawnFace&&Math.Abs(scale-drawnScale)<.001)return;
             var watch=Stopwatch.StartNew();Bitmap frame=face.Render(key,faceMotion.Blink,faceMotion.Mouth,faceMotion.Round);
             int side=Math.Max(80,(int)Math.Round(320*scale));if(surface==null||surface.Width!=side){if(surface!=null)surface.Dispose();surface=new Bitmap(side,side,PixelFormat.Format32bppPArgb);}
             using(var g=System.Drawing.Graphics.FromImage(surface))
@@ -133,8 +152,9 @@ namespace Naifrog.Windows
         void PointerDown(object sender,MouseEventArgs e)
         {
             Trace("down "+e.Button+" "+e.X+","+e.Y);
+            if(laughter.Active){StopLaughter();return;}
             if(e.Button==MouseButtons.Right){menu.Show(Cursor.Position);return;}if(e.Button!=MouseButtons.Left)return;
-            Native.Point p=new Native.Point((int)Math.Round(x)+e.X,(int)Math.Round(y)+e.Y);gesture.Begin(p.X,p.Y,4*dpi);grabX=(p.X-x)/scale;grabY=(p.Y-y)/scale;bellyDown=HitRegions.Belly(grabX,grabY);moving=false;Capture=true;dock.Reset();
+            Native.Point p=new Native.Point((int)Math.Round(x)+e.X,(int)Math.Round(y)+e.Y);gesture.Begin(p.X,p.Y,4*dpi);grabX=(p.X-x)/scale;grabY=(p.Y-y)/scale;bellyDown=HitRegions.Belly(grabX,grabY);moving=false;restoringLaughter=false;Capture=true;dock.Reset();
             faceMotion.Touch();mouthPoseDown=face.HitMouth(Controller.VisualKey,grabX,grabY)?Controller.VisualKey:null;
         }
         void PointerMove(object sender,MouseEventArgs e){if(gesture.Down){Native.Point p;ReadCursor(out p);Drag(p,clock.Elapsed.TotalMilliseconds);}}
@@ -165,6 +185,38 @@ namespace Naifrog.Windows
                 else{speech.Stop();Controller.Tap(bellyDown&&HitRegions.Belly((p.X-x)/scale,(p.Y-y)/scale));}
             }
         }
+        void ConfigureFileMonitor()
+        {
+            if(fileMonitor!=null){fileMonitor.Dispose();fileMonitor=null;}
+            if(!settings.FileLaughter||probeMode){StopLaughter();return;}
+            try { fileMonitor=new ExplorerFileMonitor(this,StopLaughter,StartLaughter); }
+            catch(System.ComponentModel.Win32Exception){tray.ShowBalloonTip(3000,"奶蛙","系统暂时不允许文件互动监听，其他互动可以继续使用。",ToolTipIcon.Info);}
+        }
+        void StartLaughter()
+        {
+            if(closing||gesture.Down||laughter.Active||restoringLaughter)return;
+            laughHomeLayout=Controller.Layout;laughHomePose=PetController.BasePose(Controller.Layout);
+            laughHomeX=x;laughHomeY=y;speech.Stop();faceMotion.Touch();laughter.Start();
+            Controller.Request("idle");
+            var work=Screen.FromPoint(new Point((int)(x+160*scale),(int)(y+160*scale))).WorkingArea;
+            startX=x;startY=y;moveX=Clamp(x,work.Left-48*scale,work.Right-272*scale);moveY=Clamp(y,work.Top-15*scale,work.Bottom-290*scale);moveAt=clock.Elapsed.TotalMilliseconds;moving=true;
+        }
+        void StopLaughter()
+        {
+            if(!laughter.Active)return;
+            laughSound.Stop();laughter.Stop();
+            if(!laughter.Active)RestoreAfterLaughter();
+        }
+        void RestoreAfterLaughter()
+        {
+            laughSound.Stop();faceMotion.Touch();Controller.SetLayout(laughHomeLayout);Controller.Request(laughHomePose);
+            startX=x;startY=y;moveX=laughHomeX;moveY=laughHomeY;moveAt=clock.Elapsed.TotalMilliseconds;moving=true;restoringLaughter=true;
+        }
+        public void StartLaughterForProbe(){StartLaughter();}
+        public void StopLaughterForProbe(){StopLaughter();}
+        public LaughPhase LaughterPhase {get{return laughter.Phase;}}
+        public string LaughterVisual {get{return laughter.VisualKey;}}
+        public bool LaughSoundPlaying {get{return laughSound.Playing;}}
         void MoveNative(){if(IsHandleCreated)Native.SetWindowPos(Handle,IntPtr.Zero,(int)Math.Round(x),(int)Math.Round(y),0,0,0x1|0x4|0x10);}
         void UpdateDpi(int px,int py)
         {
@@ -204,14 +256,14 @@ namespace Naifrog.Windows
         void Trace(string action){if(probeMode)ProbeTrace.Add(clock.Elapsed.TotalMilliseconds.ToString("F1")+" "+action+" state="+Controller.Status+" desired="+Controller.Desired+" rev="+Controller.Revision+" originalMs="+Controller.OriginalTimePlayed.ToString("F1"));}
         void Save()
         {
-            settings.X=x;settings.Y=y;settings.Layout=Controller.Layout.ToString();settings.HasPosition=true;settings.Gaze=gazeEnabled;
+            settings.X=laughter.Active||restoringLaughter?laughHomeX:x;settings.Y=laughter.Active||restoringLaughter?laughHomeY:y;settings.Layout=(laughter.Active||restoringLaughter?laughHomeLayout:Controller.Layout).ToString();settings.HasPosition=true;settings.Gaze=gazeEnabled;
             try{settings.Save(dataDirectory);}catch(IOException){}catch(UnauthorizedAccessException){}
         }
         void SystemEventsSubscribe(){Microsoft.Win32.SystemEvents.DisplaySettingsChanged+=DisplayChanged;}
         void DisplayChanged(object sender,EventArgs e){if(!closing&&IsHandleCreated)BeginInvoke((Action)delegate{RecoverPosition(true);});}
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            closing=true;timer.Stop();timer.Dispose();gesture.Cancel();Save();Microsoft.Win32.SystemEvents.DisplaySettingsChanged-=DisplayChanged;
+            closing=true;if(fileMonitor!=null)fileMonitor.Dispose();laughSound.Dispose();timer.Stop();timer.Dispose();gesture.Cancel();Save();Microsoft.Win32.SystemEvents.DisplaySettingsChanged-=DisplayChanged;
             tray.Visible=false;tray.Dispose();menu.Dispose();speech.Dispose();face.Dispose();if(surface!=null)surface.Dispose();base.OnFormClosed(e);
         }
     }

@@ -172,7 +172,7 @@ public final class FacialRenderer {
                 c = Math.cos(a),
                 s = Math.sin(a),
                 rx = m[2] * (1 - .2 * rounding),
-                ry = .6 + m[2] * .58 * opening,
+                ry = .6 + m[2] * .72 * opening,
                 center = ry * .35;
         int radius = (int) Math.ceil(m[2] + 12);
         for (int py = Math.max(0, (int) m[1] - radius); py < Math.min(320, m[1] + radius); py++)
@@ -200,13 +200,7 @@ public final class FacialRenderer {
                 double oval = u * u / (rx * rx) + (v - center) * (v - center) / (ry * ry),
                         inside = clamp((1 - oval) * Math.min(rx, ry));
                 if (inside > 0) {
-                    double lower = clamp((v - center) / ry),
-                            tongue = clamp((lower - .3) * 2) * (1 - clamp(Math.abs(u) / rx));
-                    int cavity =
-                            0xff000000
-                                    | ((int) (48 + 33 * lower + 38 * tongue) << 16)
-                                    | ((int) (25 + 11 * lower + 12 * tongue) << 8)
-                                    | (int) (15 + 7 * lower + 7 * tongue);
+                    int cavity = MouthSurface.colorAt(u / rx, (v - center) / ry);
                     output[p] = mix(output[p], cavity, inside * clamp(opening * 10));
                 } else if (oval < 1.45)
                     output[p] =

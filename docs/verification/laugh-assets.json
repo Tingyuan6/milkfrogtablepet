@@ -1,0 +1,20 @@
+{
+  "checks": 7559,
+  "sourceVideoFrames": 411,
+  "playbackFrames": 449,
+  "fps": 30,
+  "loopDurationMs": 14967,
+  "preparedExitPaths": 151,
+  "referencedPngFiles": 1480,
+  "transparentBackgroundCorners": true,
+  "frameClipping": false,
+  "minimumVideoFrameMarginPx": 13,
+  "canonicalStandingWidth": 148,
+  "canonicalStandingHeight": 260,
+  "footBaseline": 290,
+  "fixedSpatialTransform": true,
+  "sourceVideoSha256": "1c05a2a8af2052f2f0a5909f917cf3f1146215a3e5b51542a2f349dc05987e08",
+  "audioDurationMs": 14966.666666666666,
+  "originalAndyAudioUnchanged": true,
+  "visualReview": "Matte reviewed on dark background; upright transitions plus reverse video get-up for rolling poses. User appearance acceptance remains pending."
+}

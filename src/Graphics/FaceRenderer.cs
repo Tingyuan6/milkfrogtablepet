@@ -77,7 +77,7 @@ namespace Naifrog.Graphics
         }
         void Mouth(int[] src,double[] m,double opening,double rounding)
         {
-            double a=m[3]*Math.PI/180,c=Math.Cos(a),s=Math.Sin(a),rx=m[2]*(1-.2*rounding),ry=.6+m[2]*.58*opening,center=ry*.35;
+            double a=m[3]*Math.PI/180,c=Math.Cos(a),s=Math.Sin(a),rx=m[2]*(1-.2*rounding),ry=.6+m[2]*.72*opening,center=ry*.35;
             int radius=(int)Math.Ceiling(m[2]+12);
             for(int y=Math.Max(0,(int)m[1]-radius);y<Math.Min(320,m[1]+radius);y++)for(int x=Math.Max(0,(int)m[0]-radius);x<Math.Min(320,m[0]+radius);x++)
             {
@@ -89,8 +89,7 @@ namespace Naifrog.Graphics
                 double oval=u*u/(rx*rx)+(v-center)*(v-center)/(ry*ry),inside=Clamp((1-oval)*Math.Min(rx,ry));
                 if(inside>0)
                 {
-                    double lower=Clamp((v-center)/ry),tongue=Clamp((lower-.3)*2)*(1-Clamp(Math.Abs(u)/rx));
-                    int cavity=Color.FromArgb(255,(int)(48+33*lower+38*tongue),(int)(25+11*lower+12*tongue),(int)(15+7*lower+7*tongue)).ToArgb();
+                    int cavity=MouthSurface.ColorAt(u/rx,(v-center)/ry);
                     output[p]=Mix(output[p],cavity,inside*Clamp(opening*10));
                 }
                 else if(oval<1.45)output[p]=Mix(output[p],Shade(skin,v<center?.72:1.08),Clamp((1.45-oval)*2)*Clamp(opening*5));

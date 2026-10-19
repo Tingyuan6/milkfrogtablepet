@@ -13,6 +13,10 @@ try {
     if($LASTEXITCODE -ne 0){throw 'Java facial tests failed.'}
     & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' PetPlacementTests
     if($LASTEXITCODE -ne 0){throw 'Android placement tests failed.'}
+    & (Join-Path $Jdk 'bin/javac.exe') -encoding UTF-8 -d 'build/java-tests' 'android/app/src/main/java/com/naifrog/pet/MouthSurface.java' 'tests/MouthSurfaceTests.java'
+    if($LASTEXITCODE -ne 0){throw 'Mouth test compilation failed.'}
+    & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' MouthSurfaceTests
+    if($LASTEXITCODE -ne 0){throw 'Mouth tests failed.'}
     & (Join-Path $Jdk 'bin/javac.exe') -encoding UTF-8 -d 'build/java-tests' 'tools/ApkAssembler.java' 'tests/ApkAssemblerTests.java'
     if($LASTEXITCODE -ne 0){throw 'APK regression test compilation failed.'}
     & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' ApkAssemblerTests

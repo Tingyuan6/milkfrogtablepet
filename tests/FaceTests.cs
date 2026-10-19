@@ -39,6 +39,17 @@ internal static class FaceTests
                     }
                     Check(true,"blink alpha preserved "+pose);
                     for(int k=0;k<5;k++)face.Render(pose,0,k/4.0,.4).Save(Path.Combine(args[1],pose+"-mouth-"+k+".png"));
+                    Bitmap spoken=face.Render(pose,0,1,.4);int teeth=0,tongue=0;
+                    var m=info.mouth;double angle=m[3]*Math.PI/180;
+                    for(int my=Math.Max(0,(int)m[1]-18);my<Math.Min(320,m[1]+20);my++)for(int mx=Math.Max(0,(int)m[0]-20);mx<Math.Min(320,m[0]+21);mx++)
+                    {
+                        double dx=mx-m[0],dy=my-m[1],u=dx*Math.Cos(angle)+dy*Math.Sin(angle),v=-dx*Math.Sin(angle)+dy*Math.Cos(angle);
+                        if(Math.Abs(u)>m[2]*1.1||Math.Abs(v)>m[2]*.95)continue;
+                        Color pixel=spoken.GetPixel(mx,my);if(pixel.R>210&&pixel.G>200&&pixel.B>175)teeth++;
+                        if(pixel.R>110&&pixel.G<130&&pixel.B>pixel.G&&pixel.B>40)tongue++;
+                        Check(pixel.A==original.GetPixel(mx,my).A,"mouth alpha preserved "+pose);
+                    }
+                    Check(teeth>0,"ivory teeth visible "+pose);Check(tongue>0,"pink tongue visible "+pose);
                     double hx=0,hy=0;foreach(var e in info.eyes){hx+=e[0];hy+=e[1];}hx/=info.eyes.Length;hy/=info.eyes.Length;
                     face.Advance(pose,hx-40,hy,true,1000);Check(face.X<-.9,"left pupil follow "+pose);
                     Bitmap look=face.Render(pose,0,0,0);int changes=0;

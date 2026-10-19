@@ -11,8 +11,9 @@ namespace Naifrog.Windows
         public double Scale { get; set; }
         public string Layout { get; set; }
         public bool Gaze { get; set; }
+        public bool FileLaughter { get; set; }
         public bool HasPosition { get; set; }
-        public Settings(){Scale=1;Layout="Free";Gaze=true;}
+        public Settings(){Scale=1;Layout="Free";Gaze=true;FileLaughter=true;}
         public static Settings Read(string directory)
         {
             try { var s=new JavaScriptSerializer().Deserialize<Settings>(File.ReadAllText(Path.Combine(directory,"settings.json")));if(s==null||s.Scale<.5||s.Scale>2||Double.IsNaN(s.X)||Double.IsNaN(s.Y)||Double.IsInfinity(s.X)||Double.IsInfinity(s.Y))return new Settings();return s; }
