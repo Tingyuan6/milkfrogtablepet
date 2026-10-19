@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <style name="NaifrogTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+    <item name="android:fontFamily">sans</item>
+    <item name="android:colorAccent">#D5A91B</item>
+    <item name="android:windowLightStatusBar">true</item>
+    <item name="android:statusBarColor">#FFF9E8</item>
+    <item name="android:navigationBarColor">#FFF9E8</item>
+    <item name="android:windowActionModeOverlay">true</item>
+  </style>
+  <string name="keyboard_geometry_description">仅读取输入法窗口的边界，让奶蛙停在其他应用的键盘上方。不读取输入文字或界面内容。此功能可选；关闭后仍可使用奶蛙与应用内键盘互动。</string>
+</resources>

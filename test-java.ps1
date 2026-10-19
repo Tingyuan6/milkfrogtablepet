@@ -1,0 +1,12 @@
+﻿param([Parameter(Mandatory=$true)][string]$Jdk)
+$ErrorActionPreference='Stop'
+$Jdk=(Resolve-Path -LiteralPath $Jdk).Path
+Push-Location -LiteralPath $PSScriptRoot
+try {
+    node tools/export-fixtures.mjs
+    if($LASTEXITCODE -ne 0){throw 'Fixture export failed.'}
+    & (Join-Path $Jdk 'bin/javac.exe') -encoding UTF-8 -d 'build/java-tests' 'android/app/src/main/java/com/naifrog/pet/PetEngine.java' 'tests/PetEngineTests.java'
+    if($LASTEXITCODE -ne 0){throw 'Java test compilation failed.'}
+    & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' PetEngineTests 'build/engine-fixtures.properties'
+    if($LASTEXITCODE -ne 0){throw 'Java core tests failed.'}
+} finally { Pop-Location }

@@ -1,0 +1,14 @@
+build/
+dist/
+assets/derived/
+node_modules/
+.toolchain/
+data/
+android/.gradle/
+android/local.properties
+android/app/build/
+*.user
+*.log
+*.jks
+*.p12
+__pycache__/

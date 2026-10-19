@@ -1,0 +1,12 @@
+{
+  "checks": 9711,
+  "originalFrames": 37,
+  "originalMs": 4390,
+  "poses": 55,
+  "clips": 86,
+  "referencedPngs": 412,
+  "sourceHashesUnchanged": true,
+  "mirrorExact": true,
+  "eyeOnlyChanges": true,
+  "visualAcceptance": "pending human review; mathematical checks do not prove natural anatomy"
+}
