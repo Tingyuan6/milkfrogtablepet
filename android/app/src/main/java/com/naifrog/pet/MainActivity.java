@@ -3,7 +3,12 @@ package com.naifrog.pet;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -21,11 +26,23 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public final class MainActivity extends Activity {
     private FrameLayout root;
     private PetView pet;
     private TextView status;
+    private LinearLayout controls;
+    private EditText input;
+    private Button recovery;
+    private boolean petPlaced, requestingOverlay, receiverRegistered;
+    private final BroadcastReceiver overlayState =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context c, Intent i) {
+                    updateStatus();
+                }
+            };
     private boolean keyboard;
     private float beforeX, beforeY, dragX, dragY;
     private Rect keyboardRect;
@@ -38,12 +55,13 @@ public final class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+        requestingOverlay = state != null && state.getBoolean("requestingOverlay");
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(true);
         root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(255, 249, 232));
         setContentView(root);
-        LinearLayout controls = new LinearLayout(this);
+        controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.VERTICAL);
         controls.setPadding(dp(24), dp(24), dp(24), 0);
         root.addView(controls, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
@@ -71,7 +89,7 @@ public final class MainActivity extends Activity {
                 "收起桌面奶蛙",
                 v -> {
                     stopService(new Intent(this, OverlayService.class));
-                    pet.setVisibility(View.VISIBLE);
+                    if (pet != null) pet.setVisibility(View.VISIBLE);
                     updateStatus();
                 });
         button(
@@ -95,7 +113,25 @@ public final class MainActivity extends Activity {
         status.setTextSize(12);
         status.setPadding(0, dp(10), 0, 0);
         controls.addView(status);
-        EditText input = new EditText(this);
+        status.setOnClickListener(
+                v -> {
+                    if (!StartupDiagnostics.error(this).isEmpty()) showStartupError();
+                });
+        recovery =
+                button(
+                        controls,
+                        "找回应用内奶蛙",
+                        v -> {
+                            if (pet == null) {
+                                showStartupError();
+                                return;
+                            }
+                            stopService(new Intent(this, OverlayService.class));
+                            pet.setVisibility(View.VISIBLE);
+                            centerPet();
+                            updateStatus();
+                        });
+        input = new EditText(this);
         input.setSingleLine(true);
         input.setHint("点这里，试试键盘上的奶蛙");
         input.setTextSize(14);
@@ -141,13 +177,9 @@ public final class MainActivity extends Activity {
                                 public void frame(Rect bounds) {}
                             });
             root.addView(pet, new FrameLayout.LayoutParams(-1, -1));
-            root.post(
-                    () ->
-                            pet.origin(
-                                    root.getWidth() / 2f - 160 * pet.spriteScale,
-                                    Math.max(dp(270), root.getHeight() - 330 * pet.spriteScale)));
         } catch (Exception e) {
-            status.setText("奶蛙素材暂时无法打开：" + e.getMessage());
+            StartupDiagnostics.record(this, "应用内角色初始化", e);
+            updateStatus();
             return;
         }
         root.setOnApplyWindowInsetsListener(
@@ -163,17 +195,35 @@ public final class MainActivity extends Activity {
         root.getViewTreeObserver()
                 .addOnGlobalLayoutListener(
                         () -> {
-                            if (Build.VERSION.SDK_INT < 30) readKeyboard(null);
-                            else if (keyboard) placeKeyboard();
+                            if (!petPlaced) centerPet();
+                            readKeyboard(
+                                    Build.VERSION.SDK_INT >= 30
+                                            ? root.getRootWindowInsets()
+                                            : null);
                         });
     }
 
-    private void button(LinearLayout parent, String label, View.OnClickListener action) {
+    private Button button(LinearLayout parent, String label, View.OnClickListener action) {
         Button b = new Button(this);
         b.setText(label);
         b.setAllCaps(false);
         b.setOnClickListener(action);
         parent.addView(b, new LinearLayout.LayoutParams(-1, dp(48)));
+        return b;
+    }
+
+    private void centerPet() {
+        if (pet == null || root.getWidth() <= 0 || root.getHeight() <= 0) return;
+        float[] origin =
+                PetPlacement.center(
+                        root.getWidth(),
+                        root.getHeight(),
+                        pet.spriteScale,
+                        controls.getBottom() + dp(8),
+                        input.getTop() - dp(8));
+        pet.origin(origin[0], origin[1]);
+        petPlaced = true;
+        if (keyboard) placeKeyboard();
     }
 
     private static float clamp(float v, float a, float b) {
@@ -181,7 +231,7 @@ public final class MainActivity extends Activity {
     }
 
     private void readKeyboard(WindowInsets insets) {
-        if (pet == null) return;
+        if (pet == null || !petPlaced) return;
         Rect visible = new Rect();
         root.getWindowVisibleDisplayFrame(visible);
         boolean shown;
@@ -219,33 +269,104 @@ public final class MainActivity extends Activity {
     }
 
     private void startOverlay() {
-        if (!Settings.canDrawOverlays(this)) {
-            startActivity(
-                    new Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:" + getPackageName())));
+        if (pet == null) {
+            showStartupError();
             return;
         }
-        if (Build.VERSION.SDK_INT >= 33
-                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                        != PackageManager.PERMISSION_GRANTED)
-            requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, 12);
-        startForegroundService(new Intent(this, OverlayService.class));
-        pet.setVisibility(View.INVISIBLE);
-        root.postDelayed(this::updateStatus, 400);
+        try {
+            if (!Settings.canDrawOverlays(this)) {
+                requestingOverlay = true;
+                startActivity(
+                        new Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:" + getPackageName())));
+                return;
+            }
+            if (Build.VERSION.SDK_INT >= 33
+                    && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                            != PackageManager.PERMISSION_GRANTED)
+                requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, 12);
+            requestingOverlay = false;
+            startForegroundService(new Intent(this, OverlayService.class));
+            status.setText("正在开启桌面奶蛙…");
+        } catch (RuntimeException error) {
+            StartupDiagnostics.record(this, "请求开启桌面奶蛙", error);
+            updateStatus();
+            showStartupError();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (!receiverRegistered) {
+            IntentFilter filter = new IntentFilter(OverlayService.ACTION_STATE);
+            if (Build.VERSION.SDK_INT >= 33)
+                registerReceiver(overlayState, filter, Context.RECEIVER_NOT_EXPORTED);
+            else registerReceiver(overlayState, filter);
+            receiverRegistered = true;
+        }
         if (status != null) updateStatus();
-        if (pet != null)
-            pet.setVisibility(OverlayService.running() ? View.INVISIBLE : View.VISIBLE);
+        if (requestingOverlay && Settings.canDrawOverlays(this) && pet != null) {
+            requestingOverlay = false;
+            root.post(this::startOverlay);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (receiverRegistered) {
+            unregisterReceiver(overlayState);
+            receiverRegistered = false;
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        state.putBoolean("requestingOverlay", requestingOverlay);
+        super.onSaveInstanceState(state);
+    }
+
+    private void showStartupError() {
+        String error = StartupDiagnostics.error(this);
+        if (error.isEmpty()) error = "奶蛙尚未完成初始化，请关闭应用后重新打开。";
+        final String report = error;
+        new AlertDialog.Builder(this)
+                .setTitle("奶蛙启动遇到问题")
+                .setMessage("可以复制下面的错误信息用于排查。\n\n" + report)
+                .setPositiveButton(
+                        "复制错误信息",
+                        (d, w) -> {
+                            ClipboardManager clipboard = getSystemService(ClipboardManager.class);
+                            if (clipboard != null) {
+                                clipboard.setPrimaryClip(ClipData.newPlainText("奶蛙错误信息", report));
+                                Toast.makeText(this, "错误信息已复制", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                .setNegativeButton("关闭", null)
+                .show();
     }
 
     private void updateStatus() {
+        if (status == null) return;
+        if (pet == null) {
+            status.setText("奶蛙加载失败，点这里查看原因。");
+            if (recovery != null) recovery.setText("查看启动错误");
+            return;
+        }
+        boolean running = OverlayService.running();
+        pet.setVisibility(running ? View.INVISIBLE : View.VISIBLE);
+        if (!running && !StartupDiagnostics.error(this).isEmpty()) {
+            status.setText("桌面奶蛙未能开启，点这里查看错误信息。");
+            return;
+        }
         status.setText(
-                (Settings.canDrawOverlays(this) ? "悬浮显示已授权" : "悬浮显示未授权")
+                (running
+                                ? "桌面奶蛙已开启"
+                                : Settings.canDrawOverlays(this)
+                                        ? "悬浮已授权，点击开启桌面奶蛙"
+                                        : "应用内可用 · 悬浮显示未授权")
                         + " · "
                         + (KeyboardGeometryService.enabled(this) ? "跨应用键盘跟随已开启" : "跨应用键盘跟随未开启"));
     }

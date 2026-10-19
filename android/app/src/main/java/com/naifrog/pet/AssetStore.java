@@ -82,6 +82,7 @@ public final class AssetStore {
             opts.inScaled = false;
             b = BitmapFactory.decodeStream(in, null, opts);
             if (b == null) throw new IllegalStateException("Invalid image " + file);
+            b.setDensity(Bitmap.DENSITY_NONE);
             cache.put(file, b);
             return b;
         } catch (Exception e) {

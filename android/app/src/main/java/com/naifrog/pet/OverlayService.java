@@ -14,22 +14,26 @@ import android.content.pm.ServiceInfo;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.Toast;
 
 public final class OverlayService extends Service {
+    public static final String ACTION_STATE = "com.naifrog.pet.OVERLAY_STATE";
     private static OverlayService instance;
     private WindowManager wm;
     private WindowManager.LayoutParams params;
     private PetView pet;
-    private boolean attached, keyboard, registered;
+    private boolean attached, keyboard, registered, failed;
+    private Context windowContext;
     private float x, y, beforeX, beforeY, dragX, dragY;
     private Rect ime;
     private AssetStore assets;
@@ -42,7 +46,7 @@ public final class OverlayService extends Service {
                         return;
                     }
                     syncVisibility();
-                    handler.postDelayed(this, 1000);
+                    if (!failed) handler.postDelayed(this, 1000);
                 }
             };
     private final BroadcastReceiver screen =
@@ -55,12 +59,24 @@ public final class OverlayService extends Service {
             };
 
     public static boolean running() {
-        return instance != null;
+        return instance != null
+                && instance.attached
+                && !instance.failed
+                && instance.pet != null
+                && instance.pet.hasPresented();
     }
 
     public static void geometry(Rect rect) {
         OverlayService s = instance;
-        if (s != null) s.handler.post(() -> s.setKeyboard(rect));
+        if (s != null)
+            s.handler.post(
+                    () -> {
+                        try {
+                            s.setKeyboard(rect);
+                        } catch (RuntimeException error) {
+                            s.fail("键盘位置更新", error);
+                        }
+                    });
     }
 
     @Override
@@ -72,11 +88,19 @@ public final class OverlayService extends Service {
     public void onCreate() {
         super.onCreate();
         instance = this;
-        wm = (WindowManager) getSystemService(WINDOW_SERVICE);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        try {
+            return startOverlay(intent);
+        } catch (RuntimeException error) {
+            fail("启动桌面悬浮", error);
+            return START_NOT_STICKY;
+        }
+    }
+
+    private int startOverlay(Intent intent) {
         if (intent != null && "stop".equals(intent.getAction())) {
             stopSelf();
             return START_NOT_STICKY;
@@ -84,6 +108,21 @@ public final class OverlayService extends Service {
         if (!Settings.canDrawOverlays(this)) {
             stopSelf();
             return START_NOT_STICKY;
+        }
+        if (wm == null) {
+            windowContext = this;
+            if (Build.VERSION.SDK_INT >= 30) {
+                DisplayManager displays = getSystemService(DisplayManager.class);
+                Display display =
+                        displays == null ? null : displays.getDisplay(Display.DEFAULT_DISPLAY);
+                if (display == null) throw new IllegalStateException("找不到可用的显示屏");
+                windowContext =
+                        createDisplayContext(display)
+                                .createWindowContext(
+                                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null);
+            }
+            wm = windowContext.getSystemService(WindowManager.class);
+            if (wm == null) throw new IllegalStateException("系统未提供窗口服务");
         }
         NotificationManager nm = getSystemService(NotificationManager.class);
         nm.createNotificationChannel(
@@ -105,10 +144,13 @@ public final class OverlayService extends Service {
                 new Notification.Builder(this, "companion")
                         .setContentTitle("奶蛙在这里陪你")
                         .setContentText("点击打开设置，或随时收起奶蛙")
-                        .setSmallIcon(R.drawable.naifrog)
+                        .setSmallIcon(R.drawable.ic_stat_naifrog)
                         .setContentIntent(open)
                         .setOngoing(true)
-                        .addAction(new Notification.Action.Builder(null, "收起奶蛙", stop).build())
+                        .addAction(
+                                new Notification.Action.Builder(
+                                                R.drawable.ic_stat_naifrog, "收起奶蛙", stop)
+                                        .build())
                         .build();
         if (Build.VERSION.SDK_INT >= 34)
             startForeground(1, notice, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
@@ -118,7 +160,7 @@ public final class OverlayService extends Service {
                 assets = new AssetStore(this);
                 pet =
                         new PetView(
-                                this,
+                                windowContext,
                                 assets,
                                 true,
                                 new PetView.Host() {
@@ -137,6 +179,11 @@ public final class OverlayService extends Service {
 
                                     public void frame(Rect bounds) {
                                         updateWindow();
+                                    }
+
+                                    public void presented() {
+                                        StartupDiagnostics.clear(OverlayService.this);
+                                        publishState();
                                     }
                                 });
                 Rect screen = screenBounds();
@@ -177,8 +224,7 @@ public final class OverlayService extends Service {
                             });
                 clampPosition();
             } catch (Exception e) {
-                Toast.makeText(this, "奶蛙暂时无法打开，请重新开启。", Toast.LENGTH_LONG).show();
-                stopSelf();
+                fail("桌面角色初始化", e);
                 return START_NOT_STICKY;
             }
         }
@@ -204,7 +250,15 @@ public final class OverlayService extends Service {
     }
 
     private void syncVisibility() {
-        if (pet == null) return;
+        try {
+            updateVisibility();
+        } catch (RuntimeException error) {
+            fail("显示桌面奶蛙", error);
+        }
+    }
+
+    private void updateVisibility() {
+        if (pet == null || failed) return;
         boolean locked = ((KeyguardManager) getSystemService(KEYGUARD_SERVICE)).isKeyguardLocked();
         boolean interactive =
                 ((android.os.PowerManager) getSystemService(POWER_SERVICE)).isInteractive();
@@ -214,11 +268,13 @@ public final class OverlayService extends Service {
         }
         if (!attached) {
             updateWindow();
+            if (failed) return;
             try {
                 wm.addView(pet, params);
                 attached = true;
-            } catch (SecurityException | WindowManager.BadTokenException e) {
-                stopSelf();
+                publishState();
+            } catch (RuntimeException e) {
+                fail("添加悬浮窗口", e);
             }
         }
     }
@@ -227,9 +283,10 @@ public final class OverlayService extends Service {
         if (attached) {
             try {
                 wm.removeView(pet);
-            } catch (IllegalArgumentException ignored) {
+            } catch (RuntimeException ignored) {
             }
             attached = false;
+            publishState();
         }
     }
 
@@ -260,8 +317,8 @@ public final class OverlayService extends Service {
         if (attached)
             try {
                 wm.updateViewLayout(pet, params);
-            } catch (IllegalArgumentException | SecurityException e) {
-                stopSelf();
+            } catch (RuntimeException e) {
+                fail("更新悬浮窗口", e);
             }
     }
 
@@ -287,6 +344,21 @@ public final class OverlayService extends Service {
         getSharedPreferences("pet", 0).edit().putFloat("x", x).putFloat("y", y).apply();
     }
 
+    private void publishState() {
+        sendBroadcast(new Intent(ACTION_STATE).setPackage(getPackageName()));
+    }
+
+    private void fail(String stage, Throwable error) {
+        if (failed) return;
+        failed = true;
+        StartupDiagnostics.record(this, stage, error);
+        handler.removeCallbacksAndMessages(null);
+        detach();
+        publishState();
+        Toast.makeText(getApplicationContext(), "桌面奶蛙暂未开启，请返回应用查看错误信息。", Toast.LENGTH_LONG).show();
+        stopSelf();
+    }
+
     @Override
     public void onConfigurationChanged(Configuration c) {
         super.onConfigurationChanged(c);
@@ -306,6 +378,7 @@ public final class OverlayService extends Service {
         detach();
         if (assets != null) assets.clear();
         instance = null;
+        publishState();
         stopForeground(STOP_FOREGROUND_REMOVE);
         super.onDestroy();
     }

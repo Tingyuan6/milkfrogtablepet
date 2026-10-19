@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,6 +15,8 @@ public final class PetView extends View {
         void drag(float dx, float dy, boolean start, boolean end);
 
         void frame(Rect bounds);
+
+        default void presented() {}
     }
 
     public final PetEngine engine;
@@ -31,6 +34,7 @@ public final class PetView extends View {
     private int pointer = -1;
     private boolean dragging, bellyDown, look;
     private boolean attached, tickerRunning;
+    private boolean presented;
     private float lastDragX, lastDragY;
     private String drawn = "";
     private long previous;
@@ -97,6 +101,7 @@ public final class PetView extends View {
         speech = new SpeechPlayback(context, facial.speechFile);
         spriteScale = getResources().getDisplayMetrics().density * .85f;
         image = assets.get("idle");
+        setWillNotDraw(false);
         setFocusable(false);
         setContentDescription("奶蛙，点击嘴巴说话，点击肚子互动，拖动移动");
     }
@@ -119,6 +124,10 @@ public final class PetView extends View {
         return new Rect(crop);
     }
 
+    public boolean hasPresented() {
+        return presented;
+    }
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -129,11 +138,12 @@ public final class PetView extends View {
     @Override
     protected void onDetachedFromWindow() {
         attached = false;
+        presented = false;
         tickerRunning = false;
         removeCallbacks(tick);
         pointer = -1;
         dragging = false;
-        speech.stop();
+        if (speech != null) speech.stop();
         super.onDetachedFromWindow();
     }
 
@@ -150,7 +160,12 @@ public final class PetView extends View {
     }
 
     private void syncTicker() {
-        if (tick == null || engine == null) return;
+        if (tick == null
+                || engine == null
+                || facial == null
+                || faceMotion == null
+                || speech == null
+                || image == null) return;
         boolean next = attached && getWindowVisibility() == VISIBLE && isShown();
         if (next == tickerRunning) return;
         tickerRunning = next;
@@ -174,8 +189,16 @@ public final class PetView extends View {
                 compact ? -crop.left * spriteScale : originX,
                 compact ? -crop.top * spriteScale : originY);
         canvas.scale(spriteScale, spriteScale);
-        canvas.drawBitmap(image, 0, 0, paint);
+        canvas.drawBitmap(
+                image,
+                new Rect(0, 0, image.getWidth(), image.getHeight()),
+                new RectF(0, 0, 320, 320),
+                paint);
         canvas.restore();
+        if (!presented) {
+            presented = true;
+            host.presented();
+        }
     }
 
     private float logicalX(float x) {

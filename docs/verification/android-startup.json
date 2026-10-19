@@ -1,0 +1,15 @@
+{
+  "version": "0.2.1",
+  "javaEngineChecks": 164,
+  "facialTimelineChecks": 111,
+  "placementChecks": 218,
+  "androidCompiled": true,
+  "apkSignatureVerified": true,
+  "signingCertificateUnchanged": true,
+  "voiceBytesPreserved": true,
+  "validNotificationIconBundled": true,
+  "deviceAvailable": false,
+  "reportedCrashReproducedOnDevice": false,
+  "originalStackTraceAvailable": false,
+  "deviceRetestRequired": true
+}

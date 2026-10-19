@@ -12,30 +12,34 @@ this is a gift for me as my first project,also for the milk family
 
 | 你的设备 | 点击下载 |
 | --- | --- |
-| Windows 电脑 | [下载 Windows 版（ZIP）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.2.0/Naifrog-Windows-v0.2.0.zip) |
-| 安卓手机／平板 | [下载 Android 版（APK）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.2.0/Naifrog-Android-v0.2.0.apk) |
+| Windows 电脑 | [下载 Windows 版（ZIP）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.2.1/Naifrog-Windows-v0.2.1.zip) |
+| 安卓手机／平板 | [下载 Android 版（APK）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.2.1/Naifrog-Android-v0.2.1.apk) |
 
-也可以打开[下载页面 Releases](https://github.com/Tingyuan6/milkfrogtablepet/releases/tag/v0.2.0)，找到 **Assets**（下载文件列表），点击对应文件。电脑选名字带 **Windows**、后缀 **.zip** 的文件；安卓选名字带 **Android**、后缀 **.apk** 的文件。**Source code 是源码，普通使用无需下载。**
+也可以打开[下载页面 Releases](https://github.com/Tingyuan6/milkfrogtablepet/releases/tag/v0.2.1)，找到 **Assets**（下载文件列表），点击对应文件。电脑选名字带 **Windows**、后缀 **.zip** 的文件；安卓选名字带 **Android**、后缀 **.apk** 的文件。**Source code 是源码，普通使用无需下载。**
 
 ### Windows 电脑：下载 → 解压 → 打开
 
 1. 用电脑浏览器登录 GitHub，点击上面的 **下载 Windows 版（ZIP）**。
 2. 下载完成后，在浏览器的下载列表中点“在文件夹中显示”，或打开电脑的“下载”文件夹。
-3. 找到 **Naifrog-Windows-v0.2.0.zip**，右键点击它，选择 **全部解压缩**，再点击 **解压**。
-4. 打开解压出来的文件夹，再进入 **奶蛙V0.2.0-Windows** 文件夹。
+3. 找到 **Naifrog-Windows-v0.2.1.zip**，右键点击它，选择 **全部解压缩**，再点击 **解压**。
+4. 打开解压出来的文件夹，再进入 **奶蛙V0.2.1-Windows** 文件夹。
 5. 双击 **奶蛙.exe**，奶蛙就会出现在桌面上。保留同一文件夹里的 **assets**，不要单独移动 exe。
 6. 退出时，右键点击奶蛙，选择 **退出**。
 
 ### 安卓手机／平板：下载 → 安装 → 打开
 
 1. 用手机／平板的浏览器登录 GitHub，点击上面的 **下载 Android 版（APK）**。
-2. 下载完成后，点击下载通知；也可以打开“文件管理”中的“下载”，找到 **Naifrog-Android-v0.2.0.apk**。
+2. 下载完成后，点击下载通知；也可以打开“文件管理”中的“下载”，找到 **Naifrog-Android-v0.2.1.apk**。
 3. 点击 APK，选择 **安装**。
 4. 如果提示当前浏览器或文件管理器没有安装权限，点击提示里的 **设置**，为这个应用开启 **允许来自此来源的应用**（各品牌文字可能不同），再返回继续安装。安装后可关闭这项权限。
 5. 安装完成，点击 **打开**。先在应用内点击、拖动奶蛙，点击底部输入框体验键盘上方的坐姿。
 6. 想让它出现在其他应用上方，点击 **开启桌面奶蛙**，按页面引导允许悬浮显示。跨应用键盘跟随可在应用中另行开启。
 
 手机版目前支持 **Android**；iPhone／iPad 暂不支持。Android 为测试版，仍需真机验收。
+
+## V0.2.1 安卓启动修复
+
+修正初始化失败后访问空角色对象、权限状态掩盖加载错误的问题。悬浮窗口实际画出后才隐藏应用内角色；增加“找回应用内奶蛙”和可复制的错误信息。首次位置在布局完成后计算。原问题手机仍需覆盖安装复测，详见[安卓排错步骤](docs/ANDROID-TROUBLESHOOTING.md)。
 
 ## V0.2 更新
 
@@ -88,7 +92,7 @@ Android 使用 JDK 17、SDK Platform 35 和 Build Tools 35.0.0；无需 Gradle�
 ./test-java.ps1 -Jdk '你的JDK目录'
 ```
 
-产物位于 `dist/android/奶蛙-0.2.0-测试版.apk`，使用本地生成的开发证书。私钥位于 `build/` 并已排除提交；升级同一测试安装时应保留自己的开发证书。`android/` 同时提供标准原生 Android 工程配置，当前直接 SDK 脚本构建路径已验证。
+产物位于 `dist/android/奶蛙-0.2.1-测试版.apk`，使用本地生成的开发证书。私钥位于 `build/` 并已排除提交；升级同一测试安装时应保留自己的开发证书。`android/` 同时提供标准原生 Android 工程配置，当前直接 SDK 脚本构建路径已验证。
 
 ## 工程说明
 

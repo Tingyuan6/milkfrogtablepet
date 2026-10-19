@@ -28,6 +28,7 @@ public final class FacialRenderer {
 
     public FacialRenderer(AssetStore assets) throws Exception {
         this.assets = assets;
+        result.setDensity(Bitmap.DENSITY_NONE);
         JSONObject rig = new JSONObject(assets.text("face.json")),
                 data = rig.getJSONObject("faces");
         for (Iterator<String> it = data.keys(); it.hasNext(); ) {

@@ -4,7 +4,7 @@
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
-  <application android:theme="@style/NaifrogTheme" android:label="奶蛙" android:icon="@drawable/naifrog" android:allowBackup="false" android:supportsRtl="true">
+  <application android:name=".StartupDiagnostics" android:theme="@style/NaifrogTheme" android:label="奶蛙" android:icon="@drawable/naifrog" android:allowBackup="false" android:supportsRtl="true">
     <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
       <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
     </activity>

@@ -5,10 +5,12 @@ Push-Location -LiteralPath $PSScriptRoot
 try {
     node tools/export-fixtures.mjs
     if($LASTEXITCODE -ne 0){throw 'Fixture export failed.'}
-    & (Join-Path $Jdk 'bin/javac.exe') -encoding UTF-8 -d 'build/java-tests' 'android/app/src/main/java/com/naifrog/pet/PetEngine.java' 'tests/PetEngineTests.java' 'android/app/src/main/java/com/naifrog/pet/FaceMotion.java' 'tests/FaceMotionTests.java'
+    & (Join-Path $Jdk 'bin/javac.exe') -encoding UTF-8 -d 'build/java-tests' 'android/app/src/main/java/com/naifrog/pet/PetEngine.java' 'tests/PetEngineTests.java' 'android/app/src/main/java/com/naifrog/pet/FaceMotion.java' 'tests/FaceMotionTests.java' 'android/app/src/main/java/com/naifrog/pet/PetPlacement.java' 'tests/PetPlacementTests.java'
     if($LASTEXITCODE -ne 0){throw 'Java test compilation failed.'}
     & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' PetEngineTests 'build/engine-fixtures.properties'
     if($LASTEXITCODE -ne 0){throw 'Java core tests failed.'}
     & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' FaceMotionTests
     if($LASTEXITCODE -ne 0){throw 'Java facial tests failed.'}
+    & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' PetPlacementTests
+    if($LASTEXITCODE -ne 0){throw 'Android placement tests failed.'}
 } finally { Pop-Location }

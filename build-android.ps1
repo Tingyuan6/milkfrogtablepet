@@ -20,7 +20,7 @@ Run-Checked (Join-Path $BuildTools 'aapt2.exe') @('compile','--dir','android/app
 $manifestText=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'android/app/src/main/AndroidManifest.xml'))
 $manifestText=$manifestText.Replace('<manifest xmlns:android=', '<manifest package="com.naifrog.pet" xmlns:android=')
 [IO.File]::WriteAllText((Join-Path $PSScriptRoot 'build/android/AndroidManifest.xml'),$manifestText,[Text.UTF8Encoding]::new($false))
-Run-Checked (Join-Path $BuildTools 'aapt2.exe') @('link','-o','build/android/resources.apk','-I',$androidJar,'--manifest','build/android/AndroidManifest.xml','-A','assets/derived','--java','build/android/gen','--min-sdk-version','26','--target-sdk-version','35','--version-code','3','--version-name','0.2.0','-0','wav','--auto-add-overlay','-R','build/android/resources.zip')
+Run-Checked (Join-Path $BuildTools 'aapt2.exe') @('link','-o','build/android/resources.apk','-I',$androidJar,'--manifest','build/android/AndroidManifest.xml','-A','assets/derived','--java','build/android/gen','--min-sdk-version','26','--target-sdk-version','35','--version-code','4','--version-name','0.2.1','-0','wav','--auto-add-overlay','-R','build/android/resources.zip')
 $sourceFiles=@(Get-ChildItem -LiteralPath 'android/app/src/main/java','build/android/gen' -Filter '*.java' -Recurse | ForEach-Object FullName)
 $sourceList=($sourceFiles | ForEach-Object { '"'+($_ -replace '\\','/')+'"' }) -join "`n"
 [IO.File]::WriteAllText((Join-Path $PSScriptRoot 'build/android/sources.txt'),$sourceList,[Text.UTF8Encoding]::new($false))
@@ -34,7 +34,7 @@ Run-Checked (Join-Path $BuildTools 'zipalign.exe') @('-f','-p','4','build/androi
 if(!(Test-Path -LiteralPath 'build/android/dev-key.p12')){
     Run-Checked (Join-Path $Jdk 'bin/keytool.exe') @('-genkeypair','-keystore','build/android/dev-key.p12','-storetype','PKCS12','-storepass','android','-keypass','android','-alias','naifrogdebug','-dname','CN=Naifrog Local Development','-keyalg','RSA','-keysize','2048','-validity','10000')
 }
-Run-Checked (Join-Path $Jdk 'bin/java.exe') @('-jar',(Join-Path $BuildTools 'lib/apksigner.jar'),'sign','--ks','build/android/dev-key.p12','--ks-key-alias','naifrogdebug','--ks-pass','pass:android','--key-pass','pass:android','--out','dist/android/奶蛙-0.2.0-测试版.apk','build/android/aligned.apk')
-Run-Checked (Join-Path $Jdk 'bin/java.exe') @('-jar',(Join-Path $BuildTools 'lib/apksigner.jar'),'verify','--verbose','dist/android/奶蛙-0.2.0-测试版.apk')
-Write-Host 'Android package ready: dist/android/奶蛙-0.2.0-测试版.apk'
+Run-Checked (Join-Path $Jdk 'bin/java.exe') @('-jar',(Join-Path $BuildTools 'lib/apksigner.jar'),'sign','--ks','build/android/dev-key.p12','--ks-key-alias','naifrogdebug','--ks-pass','pass:android','--key-pass','pass:android','--out','dist/android/奶蛙-0.2.1-测试版.apk','build/android/aligned.apk')
+Run-Checked (Join-Path $Jdk 'bin/java.exe') @('-jar',(Join-Path $BuildTools 'lib/apksigner.jar'),'verify','--verbose','dist/android/奶蛙-0.2.1-测试版.apk')
+Write-Host 'Android package ready: dist/android/奶蛙-0.2.1-测试版.apk'
 } finally { Pop-Location }
