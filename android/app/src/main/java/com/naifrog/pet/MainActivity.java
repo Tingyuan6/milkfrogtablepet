@@ -18,6 +18,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -46,11 +47,19 @@ public final class MainActivity extends Activity {
         controls.setOrientation(LinearLayout.VERTICAL);
         controls.setPadding(dp(24), dp(24), dp(24), 0);
         root.addView(controls, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
+        LinearLayout brand = new LinearLayout(this);
+        brand.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView cover = new ImageView(this);
+        cover.setImageResource(R.drawable.naifrog);
+        cover.setContentDescription("奶蛙应用封面");
+        brand.addView(cover, new LinearLayout.LayoutParams(dp(56), dp(56)));
         TextView title = new TextView(this);
         title.setText("奶蛙");
         title.setTextSize(32);
         title.setTextColor(Color.rgb(70, 57, 28));
-        controls.addView(title);
+        title.setPadding(dp(12), 0, 0, 0);
+        brand.addView(title);
+        controls.addView(brand);
         TextView description = new TextView(this);
         description.setText("点点肚子，拖一拖。打开键盘，奶蛙就坐在上面陪你。");
         description.setTextSize(15);

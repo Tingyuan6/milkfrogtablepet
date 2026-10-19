@@ -1,0 +1,16 @@
+{
+  "version": "0.1.1",
+  "originalCoverPreserved": true,
+  "coverSha256": "f2fc88d91702eb1321fc11238104adec61239a55e486d1f93cff6f159053815f",
+  "pngSize": [
+    512,
+    512
+  ],
+  "windowsEmbeddedIconSizes": 7,
+  "windowsTrayIconMatches": true,
+  "androidPackagedIconPixelsMatch": true,
+  "androidVersionCode": 2,
+  "androidVersionName": "0.1.1",
+  "androidSigningCertificateUnchanged": true,
+  "androidUiDeviceTested": false
+}

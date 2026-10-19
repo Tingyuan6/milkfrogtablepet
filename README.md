@@ -1,5 +1,7 @@
 # 奶蛙 · milkfrogtablepet
 
+<img src="assets/source/app-cover.jpg" alt="奶蛙应用封面" width="240">
+
 this is a gift for me as my first project,also for the milk family
 
 奶蛙 V0.1 是使用现有黄色角色素材的桌宠基础互动版，包含 Windows 程序与 Android 测试应用。眼睛跟随、点击晃动、拖动与停靠均在本地运行。智能服务目前保留独立接口，具体对话、记忆和工具功能等待后续需求。
@@ -10,24 +12,24 @@ this is a gift for me as my first project,also for the milk family
 
 | 你的设备 | 点击下载 |
 | --- | --- |
-| Windows 电脑 | [下载 Windows 版（ZIP）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/1.0.0/Naifrog-Windows-v0.1.0.zip) |
-| 安卓手机／平板 | [下载 Android 版（APK）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/1.0.0/Naifrog-Android-v0.1.0.apk) |
+| Windows 电脑 | [下载 Windows 版（ZIP）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.1.1/Naifrog-Windows-v0.1.1.zip) |
+| 安卓手机／平板 | [下载 Android 版（APK）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.1.1/Naifrog-Android-v0.1.1.apk) |
 
-也可以打开[下载页面 Releases](https://github.com/Tingyuan6/milkfrogtablepet/releases/tag/1.0.0)，找到 **Assets**（下载文件列表），点击对应文件。电脑选名字带 **Windows**、后缀 **.zip** 的文件；安卓选名字带 **Android**、后缀 **.apk** 的文件。**Source code 是源码，普通使用无需下载。**
+也可以打开[下载页面 Releases](https://github.com/Tingyuan6/milkfrogtablepet/releases/tag/v0.1.1)，找到 **Assets**（下载文件列表），点击对应文件。电脑选名字带 **Windows**、后缀 **.zip** 的文件；安卓选名字带 **Android**、后缀 **.apk** 的文件。**Source code 是源码，普通使用无需下载。**
 
 ### Windows 电脑：下载 → 解压 → 打开
 
 1. 用电脑浏览器登录 GitHub，点击上面的 **下载 Windows 版（ZIP）**。
 2. 下载完成后，在浏览器的下载列表中点“在文件夹中显示”，或打开电脑的“下载”文件夹。
-3. 找到 **Naifrog-Windows-v0.1.0.zip**，右键点击它，选择 **全部解压缩**，再点击 **解压**。
-4. 打开解压出来的文件夹，再进入 **奶蛙V0.1-Windows** 文件夹。
+3. 找到 **Naifrog-Windows-v0.1.1.zip**，右键点击它，选择 **全部解压缩**，再点击 **解压**。
+4. 打开解压出来的文件夹，再进入 **奶蛙V0.1.1-Windows** 文件夹。
 5. 双击 **奶蛙.exe**，奶蛙就会出现在桌面上。保留同一文件夹里的 **assets**，不要单独移动 exe。
 6. 退出时，右键点击奶蛙，选择 **退出**。
 
 ### 安卓手机／平板：下载 → 安装 → 打开
 
 1. 用手机／平板的浏览器登录 GitHub，点击上面的 **下载 Android 版（APK）**。
-2. 下载完成后，点击下载通知；也可以打开“文件管理”中的“下载”，找到 **Naifrog-Android-v0.1.0.apk**。
+2. 下载完成后，点击下载通知；也可以打开“文件管理”中的“下载”，找到 **Naifrog-Android-v0.1.1.apk**。
 3. 点击 APK，选择 **安装**。
 4. 如果提示当前浏览器或文件管理器没有安装权限，点击提示里的 **设置**，为这个应用开启 **允许来自此来源的应用**（各品牌文字可能不同），再返回继续安装。安装后可关闭这项权限。
 5. 安装完成，点击 **打开**。先在应用内点击、拖动奶蛙，点击底部输入框体验键盘上方的坐姿。
@@ -79,7 +81,7 @@ Android 使用 JDK 17、SDK Platform 35 和 Build Tools 35.0.0；无需 Gradle�
 ./test-java.ps1 -Jdk '你的JDK目录'
 ```
 
-产物位于 `dist/android/奶蛙-0.1.0-测试版.apk`，使用本地生成的开发证书。私钥位于 `build/` 并已排除提交；升级同一测试安装时应保留自己的开发证书。`android/` 同时提供标准原生 Android 工程配置，当前直接 SDK 脚本构建路径已验证。
+产物位于 `dist/android/奶蛙-0.1.1-测试版.apk`，使用本地生成的开发证书。私钥位于 `build/` 并已排除提交；升级同一测试安装时应保留自己的开发证书。`android/` 同时提供标准原生 Android 工程配置，当前直接 SDK 脚本构建路径已验证。
 
 ## 工程说明
 

@@ -8,7 +8,7 @@ New-Item -ItemType Directory -Path 'build','dist/windows/assets' -Force | Out-Nu
 if (!(Test-Path -LiteralPath 'assets/derived/manifest.json')) { throw 'Run pnpm install --frozen-lockfile and pnpm run assets first.' }
 $sources = @(Get-ChildItem -LiteralPath 'src/Core','src/Graphics','src/Windows' -Filter '*.cs' -Recurse | ForEach-Object FullName)
 $references = @('/r:System.dll','/r:System.Core.dll','/r:System.Drawing.dll','/r:System.Windows.Forms.dll','/r:System.Web.Extensions.dll')
-& $compiler /nologo /optimize+ /platform:x64 /target:winexe '/out:dist/windows/奶蛙.exe' /win32manifest:app.manifest @references @sources
+& $compiler /nologo /optimize+ /platform:x64 /target:winexe '/out:dist/windows/奶蛙.exe' /win32manifest:app.manifest /win32icon:assets/naifrog.ico @references @sources
 if ($LASTEXITCODE -ne 0) { throw 'Windows compilation failed.' }
 $manifest = Get-Content -LiteralPath 'assets/derived/manifest.json' -Raw -Encoding UTF8 | ConvertFrom-Json
 $keep = New-Object 'System.Collections.Generic.HashSet[string]'

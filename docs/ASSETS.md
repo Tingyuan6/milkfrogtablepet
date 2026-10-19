@@ -2,6 +2,8 @@
 
 ## 来源
 
+应用封面为用户提供的眼睛特写原图，保存在 `assets/source/app-cover.jpg`。直接沿用原图设计，转换为512×512 PNG和16/24/32/48/64/128/256像素ICO，用于Android桌面图标、应用首页标识及Windows程序/托盘图标。封面不参与桌宠角色动画。需要重新转换时，安装Pillow后运行 `python tools/prepare-branding.py`。
+
 `assets/source/` 保存六个用户认可的原始输入：idle、sway、sit_1、sit_2、peek_left、bottom。正式端点不重画；`sourceSha256` 记录来源字节哈希。全部使用320×320角色坐标系，不把半身坐姿强行补腿或拉成全身高度。
 
 `assets/source/bridges/` 的三张透明条带由内置 imagegen 参考相应端点生成，每张有三个中间关键姿态：蹲下到趴姿、抱臂到托腮、站立到左边探头。它们是新增过渡资源，不能替代或证明原端点完全一致。生成提示见同目录 README。
