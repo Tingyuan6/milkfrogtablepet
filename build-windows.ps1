@@ -57,6 +57,11 @@ if ($NativeTest) {
     $probe = Start-Process -FilePath (Join-Path $PSScriptRoot 'dist/windows/奶蛙.exe') -ArgumentList @('--smoke-test','--data-dir',('"' + (Join-Path $PSScriptRoot 'build/native-test') + '"')) -WindowStyle Hidden -PassThru
     $probe.WaitForExit()
     if ($probe.ExitCode -ne 0) { throw 'Native window tests failed; see build/native-test.' }
+    & $compiler /nologo /optimize+ /platform:x64 /target:exe /main:LifecycleTests /out:build/LifecycleTests.exe @references @sources (Join-Path $PSScriptRoot 'tests/LifecycleTests.cs')
+    if ($LASTEXITCODE -ne 0) { throw 'Lifecycle test compilation failed.' }
+    $lifecycle = Start-Process -FilePath (Join-Path $PSScriptRoot 'build/LifecycleTests.exe') -ArgumentList @(('"' + (Join-Path $PSScriptRoot 'dist/windows/assets') + '"'),('"' + (Join-Path $PSScriptRoot 'build/lifecycle-native') + '"')) -WindowStyle Hidden -PassThru
+    $lifecycle.WaitForExit()
+    if ($lifecycle.ExitCode -ne 0) { throw 'Repeated laughter/speech lifecycle tests failed; see build/lifecycle-native.' }
 }
 Write-Host 'Windows build ready: dist/windows/奶蛙.exe'
 } finally { Pop-Location }

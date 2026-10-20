@@ -45,7 +45,9 @@ namespace Naifrog.Windows
         }
         public bool Play()
         {
-            try{if(handle==IntPtr.Zero)Open();Stop();if(waveOutWrite(handle,header,HeaderSize)!=0)throw new IOException("Audio playback failed");queued=true;return true;}
+            // A fresh device/buffer gives each replay its own zero-based media
+            // clock, including after switching between the laugh and Andy players.
+            try{Dispose();Open();if(waveOutWrite(handle,header,HeaderSize)!=0)throw new IOException("Audio playback failed");queued=true;return true;}
             catch(Exception e){if(!(e is IOException||e is InvalidDataException||e is UnauthorizedAccessException))throw;Dispose();return false;}
         }
         public void Stop(){if(handle!=IntPtr.Zero&&queued)waveOutReset(handle);queued=false;}

@@ -8,7 +8,8 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT.parent / "outputs"
 OUTPUT.mkdir(exist_ok=True)
-VERSION = "0.3.0"
+VERSION = "0.3.1"
+ANDROID_VERSION = "0.3.0"  # This patch only changes the Windows host.
 PREFIX = "奶蛙V" + VERSION
 top = {".gitignore", ".gitattributes", "app.manifest", "README.md", "package.json", "pnpm-lock.yaml",
        "build-windows.ps1", "build-android.ps1", "test-java.ps1"}
@@ -54,10 +55,11 @@ with ZipFile(OUTPUT / (PREFIX + "-源码与素材.zip"), "w", ZIP_DEFLATED) as a
 with ZipFile(OUTPUT / (PREFIX + "-源码与素材.zip"), "r") as archive:
     assert archive.testzip() is None, "Source archive CRC failed"
 
-shutil.copy2(ROOT / ("dist/android/奶蛙-" + VERSION + "-测试版.apk"), OUTPUT / (PREFIX + "-Android测试版.apk"))
+android_name = "奶蛙V" + ANDROID_VERSION + "-Android测试版.apk"
+shutil.copy2(ROOT / ("dist/android/奶蛙-" + ANDROID_VERSION + "-测试版.apk"), OUTPUT / android_name)
 shutil.copy2(ROOT / "docs/STATUS.md", OUTPUT / (PREFIX + "-交付说明.md"))
 release = []
-for name in [PREFIX + "-Windows便携版.zip", PREFIX + "-源码与素材.zip", PREFIX + "-Android测试版.apk", PREFIX + "-交付说明.md"]:
+for name in [PREFIX + "-Windows便携版.zip", PREFIX + "-源码与素材.zip", android_name, PREFIX + "-交付说明.md"]:
     p = OUTPUT / name
     release.append({"file": name, "bytes": p.stat().st_size, "sha256": hashlib.sha256(p.read_bytes()).hexdigest()})
 (OUTPUT / (PREFIX + "-SHA256.json")).write_text(json.dumps(release, ensure_ascii=False, indent=2), encoding="utf-8")

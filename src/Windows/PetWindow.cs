@@ -23,6 +23,7 @@ namespace Naifrog.Windows
         ExplorerFileMonitor fileMonitor;
         int laughAudioEpoch;
         bool restoringLaughter;
+        bool pendingLaughter;
         LayoutMode laughHomeLayout;
         string laughHomePose;
         double laughHomeX,laughHomeY;
@@ -133,6 +134,7 @@ namespace Naifrog.Windows
                 double t=Math.Min(1,(now-moveAt)/180),smooth=t*t*(3-2*t);x=startX+(moveX-startX)*smooth;y=startY+(moveY-startY)*smooth;
                 if(t>=1){moving=false;restoringLaughter=false;Save();}MoveNative();
             }
+            if(pendingLaughter&&!laughter.Active&&!restoringLaughter&&!gesture.Down&&!moving){pendingLaughter=false;StartLaughter();}
             Draw(eyeChanged);
             timer.Interval=laughter.Active||Controller.InTransition||Controller.IsSwaying||gesture.Down||moving||eyeChanged||speech.Playing||faceMotion.Blink>0||faceMotion.Mouth>0?16:32;
         }
@@ -194,7 +196,14 @@ namespace Naifrog.Windows
         }
         void StartLaughter()
         {
-            if(closing||gesture.Down||laughter.Active||restoringLaughter)return;
+            if(closing||gesture.Down)return;
+            // A newly opened item can arrive while the preceding click is returning
+            // the frog home. Keep that request instead of dropping it for the session.
+            if(laughter.Active||restoringLaughter)
+            {
+                pendingLaughter=true;
+                StopLaughterCore();return;
+            }
             laughHomeLayout=Controller.Layout;laughHomePose=PetController.BasePose(Controller.Layout);
             laughHomeX=x;laughHomeY=y;speech.Stop();faceMotion.Touch();laughter.Start();
             Controller.Request("idle");
@@ -203,13 +212,18 @@ namespace Naifrog.Windows
         }
         void StopLaughter()
         {
+            pendingLaughter=false;StopLaughterCore();
+        }
+        void StopLaughterCore()
+        {
             if(!laughter.Active)return;
             laughSound.Stop();laughter.Stop();
             if(!laughter.Active)RestoreAfterLaughter();
         }
         void RestoreAfterLaughter()
         {
-            laughSound.Stop();faceMotion.Touch();Controller.SetLayout(laughHomeLayout);Controller.Request(laughHomePose);
+            laughSound.Dispose();speech.Dispose();faceMotion.Touch();Controller.SetLayout(laughHomeLayout);Controller.Request(laughHomePose);
+            drawnKey=null;drawnFace="";
             startX=x;startY=y;moveX=laughHomeX;moveY=laughHomeY;moveAt=clock.Elapsed.TotalMilliseconds;moving=true;restoringLaughter=true;
         }
         public void StartLaughterForProbe(){StartLaughter();}

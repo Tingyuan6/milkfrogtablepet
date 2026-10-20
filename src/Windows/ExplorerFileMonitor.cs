@@ -32,15 +32,15 @@ namespace Naifrog.Windows
         readonly Action clicked,opened;
         readonly BlockingCollection<Input> queue=new BlockingCollection<Input>(32);
         readonly HookProc mouseProc,keyProc;
-        readonly Thread worker;
+        readonly Thread worker,hookThread;
+        readonly ManualResetEvent hookReady=new ManualResetEvent(false);
+        Control hookPump;
+        Exception hookError;
         IntPtr mouseHook,keyHook;
         long serial;
         volatile bool disposed;
         bool enterHeld;
-        string lastOpened;
         FileActivationGesture gesture;
-        readonly Stopwatch clock=Stopwatch.StartNew();
-        double lastOpenAt=-1000;
         readonly int doubleTime=(int)GetDoubleClickTime(),doubleX=GetSystemMetrics(36),doubleY=GetSystemMetrics(37);
         public bool Available {get{return mouseHook!=IntPtr.Zero&&keyHook!=IntPtr.Zero;}}
         public volatile bool ShellMetadataAvailable,ShellProbeFinished;
@@ -50,11 +50,32 @@ namespace Naifrog.Windows
             this.owner=owner;this.clicked=clicked;this.opened=opened;
             gesture=new FileActivationGesture((uint)doubleTime,doubleX,doubleY);
             mouseProc=Mouse;keyProc=Key;
-            IntPtr module=GetModuleHandle(null);
-            mouseHook=SetWindowsHookEx(14,mouseProc,module,0);
-            keyHook=SetWindowsHookEx(13,keyProc,module,0);
-            if(!Available){if(mouseHook!=IntPtr.Zero)UnhookWindowsHookEx(mouseHook);if(keyHook!=IntPtr.Zero)UnhookWindowsHookEx(keyHook);mouseHook=keyHook=IntPtr.Zero;throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());}
+            // Low-level hooks need their own prompt message pump. PNG decoding and
+            // layered-window rendering must not delay them until Windows removes them.
+            hookThread=new Thread(HookLoop){IsBackground=true,Name="Naifrog desktop input"};hookThread.SetApartmentState(ApartmentState.STA);hookThread.Start();
+            hookReady.WaitOne();hookReady.Dispose();
+            if(hookError!=null)throw new System.ComponentModel.Win32Exception("Desktop input listener unavailable",hookError);
             worker=new Thread(delegate(){try{Work();}catch(Exception error){Diagnostic=error.ToString();ShellProbeFinished=true;}}){IsBackground=true,Name="Naifrog Explorer activations"};worker.SetApartmentState(ApartmentState.MTA);worker.Start();
+        }
+        void HookLoop()
+        {
+            bool signaled=false;
+            try
+            {
+                using(var pump=new Control())
+                {
+                    IntPtr handle=pump.Handle;hookPump=pump;IntPtr module=GetModuleHandle(null);
+                    mouseHook=SetWindowsHookEx(14,mouseProc,module,0);keyHook=SetWindowsHookEx(13,keyProc,module,0);
+                    if(!Available)throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                    signaled=true;hookReady.Set();Application.Run();
+                }
+            }
+            catch(Exception error){hookError=error;if(!signaled)hookReady.Set();}
+            finally
+            {
+                if(mouseHook!=IntPtr.Zero)UnhookWindowsHookEx(mouseHook);if(keyHook!=IntPtr.Zero)UnhookWindowsHookEx(keyHook);
+                mouseHook=keyHook=IntPtr.Zero;hookPump=null;
+            }
         }
         void Post(Action action){if(disposed||owner.IsDisposed||!owner.IsHandleCreated)return;try{owner.BeginInvoke(action);}catch(InvalidOperationException){} }
         void Enqueue(Input input){if(!disposed&&!queue.IsAddingCompleted)try{queue.TryAdd(input);}catch(InvalidOperationException){} }
@@ -113,11 +134,15 @@ namespace Naifrog.Windows
         {
             return shellName==accessibleName||Path.GetFileName(path)==accessibleName||Path.GetFileNameWithoutExtension(path)==accessibleName;
         }
-        static string SelectedFile(IntPtr root,AutomationElement element)
+        static string SelectedItem(IntPtr root,AutomationElement element)
         {
             if(!IsShell(root))return null;
             element=Item(element);if(element==null)return null;
             string name=element.Current.Name;if(String.IsNullOrEmpty(name))return null;
+            // A real desktop icon is enough, including folders, shortcuts and
+            // virtual icons (This PC / Recycle Bin). It need not be a disk file.
+            string cls=ClassName(root);
+            if(cls=="Progman"||cls=="WorkerW")return "desktop:"+name;
             object shell=null,windows=null;
             try
             {
@@ -136,9 +161,9 @@ namespace Naifrog.Windows
                             object item=null;
                             try
                             {
-                                item=Get(items,"Item",j);if(Convert.ToBoolean(Get(item,"IsFolder")))continue;
+                                item=Get(items,"Item",j);
                                 string path=Convert.ToString(Get(item,"Path"));string shellName=Convert.ToString(Get(item,"Name"));
-                                if(SameName(shellName,name,path)&&File.Exists(path))return path;
+                                if(SameName(shellName,name,path)&&!String.IsNullOrEmpty(path))return path;
                             }
                             finally{Release(item);}
                         }
@@ -148,9 +173,9 @@ namespace Naifrog.Windows
                         try
                         {
                             folder=Get(document,"Folder");itemByName=Get(folder,"ParseName",name);
-                            if(itemByName!=null&&!Convert.ToBoolean(Get(itemByName,"IsFolder")))
+                            if(itemByName!=null)
                             {
-                                string path=Convert.ToString(Get(itemByName,"Path"));if(File.Exists(path))return path;
+                                string path=Convert.ToString(Get(itemByName,"Path"));if(!String.IsNullOrEmpty(path))return path;
                             }
                         }
                         finally{Release(itemByName);Release(folder);}
@@ -159,21 +184,11 @@ namespace Naifrog.Windows
                 }
             }
             finally{Release(windows);Release(shell);}
-            // Desktop items are not always exposed as a ShellWindows entry.
-            string cls=ClassName(root);
-            if(cls=="Progman"||cls=="WorkerW")foreach(string folder in new[]{Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory)})
-            {
-                if(!Directory.Exists(folder))continue;
-                foreach(string path in Directory.EnumerateFiles(folder))if(SameName(Path.GetFileName(path),name,path))return path;
-            }
             return null;
         }
         void Activate(string file,long epoch)
         {
             if(file==null||epoch!=Interlocked.Read(ref serial))return;
-            double now=clock.Elapsed.TotalMilliseconds;
-            if(file==lastOpened&&now-lastOpenAt<650)return;
-            lastOpened=file;lastOpenAt=now;
             Post(delegate{if(epoch==Interlocked.Read(ref serial))opened();});
         }
         void Work()
@@ -199,19 +214,21 @@ namespace Naifrog.Windows
                         else
                         {
                             string candidate=null;
-                            if(IsShell(input.root))candidate=SelectedFile(input.root,AutomationElement.FromPoint(new System.Windows.Point(input.x,input.y)));
+                            if(IsShell(input.root))candidate=SelectedItem(input.root,AutomationElement.FromPoint(new System.Windows.Point(input.x,input.y)));
                             gesture.Remember(input.time,input.x,input.y,input.root.ToInt64(),candidate);
                         }
                     }
-                    else if(input.kind==2&&IsShell(input.root))Activate(SelectedFile(input.root,AutomationElement.FocusedElement),input.serial);
+                    else if(input.kind==2&&IsShell(input.root))Activate(SelectedItem(input.root,AutomationElement.FocusedElement),input.serial);
                 }
                 catch(Exception error){if(!(error is SystemException||error is TargetInvocationException))throw;}
             }
         }
         public void Dispose()
         {
-            disposed=true;
-            if(mouseHook!=IntPtr.Zero)UnhookWindowsHookEx(mouseHook);if(keyHook!=IntPtr.Zero)UnhookWindowsHookEx(keyHook);mouseHook=keyHook=IntPtr.Zero;
+            if(disposed)return;disposed=true;
+            Control pump=hookPump;
+            if(pump!=null)try{pump.BeginInvoke((Action)Application.ExitThread);}catch(InvalidOperationException){}
+            hookThread.Join(1000);
             queue.CompleteAdding();if(worker!=null)worker.Join(200);
         }
     }

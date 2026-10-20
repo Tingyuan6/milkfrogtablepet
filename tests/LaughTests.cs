@@ -44,7 +44,11 @@ internal static class LaughTests
             var gesture=new FileActivationGesture(500,4,4);
             Check(gesture.Complete(1,10,10,1)==null,"single click never opens");
             gesture.Remember(1,10,10,1,"a.txt");Check(gesture.Complete(100,12,12,1)=="a.txt","verified same-item double click");Check(gesture.Complete(120,12,12,1)==null,"one activation per pair");
-            gesture.Remember(1,10,10,1,null);Check(gesture.Complete(100,10,10,1)==null,"folder or blank item cannot trigger");
+            gesture.Remember(1,10,10,1,null);Check(gesture.Complete(100,10,10,1)==null,"blank area cannot trigger");
+            foreach(string item in new[]{"desktop:文件夹","desktop:应用快捷方式","desktop:此电脑","desktop:回收站","C:\\Desktop\\Folder"})
+            {
+                gesture.Remember(1,10,10,1,item);Check(gesture.Complete(100,10,10,1)==item,"all verified desktop item types "+item);
+            }
             gesture.Remember(1,10,10,1,"a.txt");Check(gesture.Complete(600,10,10,1)==null,"slow pair");
             gesture.Remember(1,10,10,1,"a.txt");Check(gesture.Complete(100,20,10,1)==null,"different item region");
             gesture.Remember(1,10,10,1,"a.txt");Check(gesture.Complete(100,10,10,2)==null,"different window");

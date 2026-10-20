@@ -1,0 +1,1 @@
+{"passed":false,"checks":1,"error":"System.Exception: opening again during recovery is not dropped\r\n   在 LifecycleTests.Check(Boolean ok, String name)\r\n   在 LifecycleTests.RapidReopen(PetWindow pet)\r\n   在 LifecycleTests.Main(String[] args)","observations":[]}

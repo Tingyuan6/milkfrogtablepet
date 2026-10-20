@@ -4,31 +4,31 @@
 
 this is a gift for me as my first project,also for the milk family
 
-奶蛙 V0.3 是使用现有黄色角色素材的桌宠基础互动版，包含 Windows 程序与 Android 测试应用。眼睛跟随、点击晃动、拖动与停靠均在本地运行。智能服务目前保留独立接口，具体对话、记忆和工具功能等待后续需求。
+奶蛙 Windows V0.3.1 / Android V0.3.0 是使用现有黄色角色素材的桌宠基础互动版，包含 Windows 程序与 Android 测试应用。眼睛跟随、点击晃动、拖动与停靠均在本地运行。智能服务目前保留独立接口，具体对话、记忆和工具功能等待后续需求。
 
 ## 下载与安装（从这里开始）
 
-**先登录 GitHub。** 当前仓库是私有仓库，请使用 Tingyuan6 或已获授权的账号；看到 404 时先检查是否登录了正确账号。
+当前仓库已公开，可直接下载。若下载链接显示 404，可从下面的 Releases 页面找到对应版本的 Assets 文件列表。
 
 | 你的设备 | 点击下载 |
 | --- | --- |
-| Windows 电脑 | [下载 Windows 版（ZIP）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.3.0/Naifrog-Windows-v0.3.0.zip) |
+| Windows 电脑 | [下载 Windows 版（ZIP）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.3.1/Naifrog-Windows-v0.3.1.zip) |
 | 安卓手机／平板 | [下载 Android 版（APK）](https://github.com/Tingyuan6/milkfrogtablepet/releases/download/v0.3.0/Naifrog-Android-v0.3.0.apk) |
 
-也可以打开[下载页面 Releases](https://github.com/Tingyuan6/milkfrogtablepet/releases/tag/v0.3.0)，找到 **Assets**（下载文件列表），点击对应文件。电脑选名字带 **Windows**、后缀 **.zip** 的文件；安卓选名字带 **Android**、后缀 **.apk** 的文件。**Source code 是源码，普通使用无需下载。**
+也可以打开[下载页面 Releases](https://github.com/Tingyuan6/milkfrogtablepet/releases/tag/v0.3.1)，找到 **Assets**（下载文件列表），点击对应文件。电脑选名字带 **Windows**、后缀 **.zip** 的文件；安卓选名字带 **Android**、后缀 **.apk** 的文件。**Source code 是源码，普通使用无需下载。**
 
 ### Windows 电脑：下载 → 解压 → 打开
 
-1. 用电脑浏览器登录 GitHub，点击上面的 **下载 Windows 版（ZIP）**。
+1. 用电脑浏览器点击上面的 **下载 Windows 版（ZIP）**。
 2. 下载完成后，在浏览器的下载列表中点“在文件夹中显示”，或打开电脑的“下载”文件夹。
-3. 找到 **Naifrog-Windows-v0.3.0.zip**，右键点击它，选择 **全部解压缩**，再点击 **解压**。
-4. 打开解压出来的文件夹，再进入 **奶蛙V0.3.0-Windows** 文件夹。
+3. 找到 **Naifrog-Windows-v0.3.1.zip**，右键点击它，选择 **全部解压缩**，再点击 **解压**。
+4. 打开解压出来的文件夹，再进入 **奶蛙V0.3.1-Windows** 文件夹。
 5. 双击 **奶蛙.exe**，奶蛙就会出现在桌面上。保留同一文件夹里的 **assets**，不要单独移动 exe。
 6. 退出时，右键点击奶蛙，选择 **退出**。
 
 ### 安卓手机／平板：下载 → 安装 → 打开
 
-1. 用手机／平板的浏览器登录 GitHub，点击上面的 **下载 Android 版（APK）**。
+1. 用手机／平板的浏览器点击上面的 **下载 Android 版（APK）**。
 2. 下载完成后，点击下载通知；也可以打开“文件管理”中的“下载”，找到 **Naifrog-Android-v0.3.0.apk**。
 3. 点击 APK，选择 **安装**。
 4. 如果提示当前浏览器或文件管理器没有安装权限，点击提示里的 **设置**，为这个应用开启 **允许来自此来源的应用**（各品牌文字可能不同），再返回继续安装。安装后可关闭这项权限。
@@ -37,10 +37,17 @@ this is a gift for me as my first project,also for the milk family
 
 手机版目前支持 **Android**；iPhone／iPad 暂不支持。Android 为测试版，仍需真机验收。
 
+## V0.3.1 Windows 连续互动修复
+
+- 大笑退出、倒地起身和位置恢复期间再次打开项目，会在恢复后开始新的大笑；后续点击仍可取消待播放的大笑。
+- 输入监听改为独立消息线程，避免视频帧加载/绘制阻塞监听；每次语音重播重新建立音频设备与播放缓冲，大笑退出时释放旧音频并重新绘制面部，保证嘴型使用本次播放时间。
+- 桌面的文件、文件夹、应用快捷方式、此电脑及回收站图标，双击或选中按 Enter 打开均可触发；资源管理器中的文件和文件夹也支持。空白单击和普通选中不触发。识别桌面图标不再依赖“磁盘文件存在”的限制。
+- 本次是 Windows 修补版；Android 继续使用 0.3.0，无需重复安装。此处的打开识别为系统标准双击或 Enter；第三方文件管理器、单击打开设置和右键菜单打开仍待扩展。
+
 ## V0.3 嘴型与打开文件大笑
 
 - 两端六种稳定姿态的“安迪”嘴型加入上下牙齿、粉色舌头和口腔阴影；跟随原两秒语音，闭嘴时仍使用原图。
-- Windows：在桌面或Windows资源管理器中双击文件，或选中文件后按Enter，奶蛙进入从用户视频提取的透明大笑动作，并播放视频笑声。单击选中、打开文件夹、搜索框输入或其他应用中的双击不触发。
+- Windows：在桌面或Windows资源管理器中双击文件，或选中文件后按Enter，奶蛙进入从用户视频提取的透明大笑动作，并播放视频笑声。0.3.1起同时支持文件夹和桌面系统图标；单击选中、搜索框输入或其他应用中的双击不触发。
 - 点击任意位置立即停止笑声，再补帧返回原姿态和位置；倒地时先沿原动作反向起身，最长约1.5秒。大笑在边缘触发时会暂时移到可见范围，结束后恢复。
 - 右键奶蛙或托盘可关闭“打开文件时大笑”，也可选择“停止大笑”。识别只检查资源管理器项目和文件元数据，不读取文件内容，不保存文件名或键盘历史，不拦截正常点击和Enter操作。
 - 文件触发目前针对Windows资源管理器/桌面的双击与Enter；第三方文件管理器、系统单击打开模式和右键菜单“打开”不在此版本的触发范围。Android这次同步嘴型，不监听其他应用打开文件。

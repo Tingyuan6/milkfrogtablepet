@@ -1,0 +1,27 @@
+{
+  "version": "0.3.1",
+  "platform": "Windows",
+  "androidUnchangedVersion": "0.3.0",
+  "coreChecks": 267,
+  "faceChecks": 617431,
+  "laughChecks": 16664,
+  "lifecycleChecks": 90,
+  "allInterruptionPositions": 449,
+  "oldRecoveryReopenReproduced": true,
+  "oldMouthLossReproduced": false,
+  "originalDeviceRetestRequired": true,
+  "actualDesktopIconActivationEndToEndVerified": false,
+  "lifecycleReport": "v0.3.1-lifecycle.json",
+  "oldRegressionReport": "v0.3.1-regression-before.json",
+  "nativeReport": {
+    "reactionStartsFromRightDock": true,
+    "clickStopAudioImmediate": true,
+    "restoresOriginalLayoutAndPosition": true,
+    "globalHooksInstallAndDispose": true,
+    "shellMetadataApiAvailable": true,
+    "triggerMethod": "Controlled host activation and cancellation; actual Explorer user double-click is still a manual acceptance item. No hardware input injection."
+  },
+  "actualAudioReplaysAndMouthLevelsVerified": 18,
+  "inputHookIndependentPumpVerified": true,
+  "assetsUnchanged": true
+}
