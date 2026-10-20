@@ -21,4 +21,8 @@ try {
     if($LASTEXITCODE -ne 0){throw 'APK regression test compilation failed.'}
     & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' ApkAssemblerTests
     if($LASTEXITCODE -ne 0){throw 'APK packaging regression tests failed.'}
+    & (Join-Path $Jdk 'bin/javac.exe') -encoding UTF-8 -d 'build/java-tests' 'android/app/src/main/java/com/naifrog/pet/FartReaction.java' 'tests/FartReactionTests.java'
+    if($LASTEXITCODE -ne 0){throw 'Fart Java compilation failed.'}
+    & (Join-Path $Jdk 'bin/java.exe') -cp 'build/java-tests' FartReactionTests
+    if($LASTEXITCODE -ne 0){throw 'Fart Java tests failed.'}
 } finally { Pop-Location }

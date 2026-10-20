@@ -25,6 +25,9 @@ public final class PetView extends View {
     private final FacialRenderer facial;
     private final FaceMotion faceMotion;
     private final SpeechPlayback speech;
+    private final SpeechPlayback fartSound;
+    private final FartReaction fart = new FartReaction();
+    private boolean buttDown;
     private String mouthPoseDown;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final boolean compact;
@@ -49,6 +52,11 @@ public final class PetView extends View {
                     previous = now;
                     engine.advance(dt);
                     String pose = engine.visual();
+                    boolean fartWasActive=fart.active();
+                    fart.advance(dt);
+                    if (!"bottom".equals(pose)) fart.stop();
+                    if (fartWasActive && !fart.active()) fartSound.stop();
+                    if (fart.active()) pose=fart.visual();
                     facial.advance(pose, mouseX, mouseY, look, dt);
                     if (!facial.has(pose)) speech.stop();
                     faceMotion.advance(
@@ -76,7 +84,7 @@ public final class PetView extends View {
                     if (tickerRunning)
                         postDelayed(
                                 this,
-                                engine.animating()
+                                fart.active() || engine.animating()
                                                 || pointer >= 0
                                                 || speech.playing()
                                                 || faceMotion.blink > 0
@@ -99,6 +107,7 @@ public final class PetView extends View {
         }
         faceMotion = new FaceMotion(facial.speechSamples, facial.speechStep);
         speech = new SpeechPlayback(context, facial.speechFile);
+        fartSound = new SpeechPlayback(context, "audio/fart.wav");
         spriteScale = getResources().getDisplayMetrics().density * .85f;
         image = assets.get("idle");
         setWillNotDraw(false);
@@ -144,6 +153,7 @@ public final class PetView extends View {
         pointer = -1;
         dragging = false;
         if (speech != null) speech.stop();
+        if (fartSound != null) { fartSound.stop(); fart.stop(); }
         super.onDetachedFromWindow();
     }
 
@@ -165,6 +175,7 @@ public final class PetView extends View {
                 || facial == null
                 || faceMotion == null
                 || speech == null
+                || fartSound == null
                 || image == null) return;
         boolean next = attached && getWindowVisibility() == VISIBLE && isShown();
         if (next == tickerRunning) return;
@@ -178,6 +189,7 @@ public final class PetView extends View {
             dragging = false;
             look = false;
             speech.stop();
+            fartSound.stop();fart.stop();
         }
     }
 
@@ -227,6 +239,7 @@ public final class PetView extends View {
             bellyDown = PetEngine.belly(lx, ly);
             faceMotion.touch();
             mouthPoseDown = facial.hitMouth(engine.visual(), lx, ly) ? engine.visual() : null;
+            buttDown = FartReaction.hit(engine.visual(),lx,ly);
             mouseX = lx;
             mouseY = ly;
             look = true;
@@ -262,6 +275,7 @@ public final class PetView extends View {
             if (start) {
                 dragging = true;
                 speech.stop();
+                fart.stop();fartSound.stop();
                 faceMotion.touch();
                 engine.beginDrag();
             }
@@ -276,7 +290,12 @@ public final class PetView extends View {
                 performClick();
                 faceMotion.touch();
                 if (engine.visual().equals(mouthPoseDown)
-                        && facial.hitMouth(engine.visual(), lx, ly)) speech.play();
+                        && facial.hitMouth(engine.visual(), lx, ly)) {
+                    fart.stop();fartSound.stop();speech.play();
+                }
+                else if (buttDown && FartReaction.hit(engine.visual(),lx,ly)) {
+                    speech.stop();if(fart.start(engine.visual())) fartSound.play();
+                }
                 else {
                     speech.stop();
                     engine.tap(bellyDown && PetEngine.belly(lx, ly));

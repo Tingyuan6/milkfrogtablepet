@@ -37,6 +37,13 @@ registered=np.array(Image.open(out/meta['frames'][166-meta['sourceStartFrame']])
 yy,xx=np.where(registered[:,:,3]>128)
 check(abs(int(yy.max())+1-290)<=1 and abs((int(yy.max())-int(yy.min())+1)-260)<=2,'standing height and foot baseline match idle')
 check(abs((int(xx.max())-int(xx.min())+1)-148)<=2,'standing width matches idle')
+for frame,x,y in [(160,80,104),(180,105,75),(200,105,67)]:
+    a=np.array(Image.open(out/f'laugh/frames/{frame:04d}.png'))
+    check(a[y,x,3]==0,'hugging arm/head white gap removed')
+head=np.array(Image.open(out/'laugh/frames/0180.png'))
+teeth=head[79:112,115:151]
+check(((teeth[:,:,:3].min(axis=2)>160)&(teeth[:,:,3]>240)).sum()>15,'laugh teeth preserved')
+check(head[165,160,3]==255,'cream belly remains opaque')
 with wave.open(str(out/meta['audio'])) as wav:
     check(wav.getsampwidth()==2 and wav.getnchannels()==2 and wav.getframerate()==44100,'PCM stereo laugh')
     audio_ms=wav.getnframes()*1000/wav.getframerate()
@@ -45,6 +52,7 @@ report={'checks':checks,'sourceVideoFrames':411,'playbackFrames':449,'fps':30,'l
         'referencedPngFiles':len(files),'transparentBackgroundCorners':True,'frameClipping':False,'minimumVideoFrameMarginPx':minimum_margin,
         'canonicalStandingWidth':148,'canonicalStandingHeight':260,'footBaseline':290,'fixedSpatialTransform':True,
         'sourceVideoSha256':meta['sourceSha256'],'audioDurationMs':audio_ms,'originalAndyAudioUnchanged':True,
+        'internalArmHeadGapsTransparent':True,'teethAndBellyPreserved':True,'matteRepairVersion':meta.get('matteRepairVersion'),
         'visualReview':'Matte reviewed on dark background; upright transitions plus reverse video get-up for rolling poses. User appearance acceptance remains pending.'}
 (root/'docs/verification/laugh-assets.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
 print(json.dumps(report))

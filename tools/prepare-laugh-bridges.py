@@ -62,7 +62,7 @@ def transition(a,b,folder,first,last,count):
     return files
 
 original=meta.get('sourceFrames',meta['frames'])
-old_exits=meta['exits'].copy() if meta.get('ready') else {}
+old_exits=meta['exits'].copy() if meta.get('ready') else meta.pop('reusableExits',{})
 first=sprite(np.array(Image.open(out/original[0]).convert('RGBA')).astype(np.float32))
 # The supplied video cuts from the floor to standing near its end. Replace that
 # edit with the original fall played backwards, followed by a short optical bridge.

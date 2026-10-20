@@ -1,0 +1,183 @@
+{
+  "method": "Remove neutral-white internal video background, preserve warm belly and dark-cavity teeth",
+  "changedSourceFrames": 44,
+  "removedPixels": 3903,
+  "frames": [
+    {
+      "file": "laugh/frames/0160.png",
+      "removedPixels": 65
+    },
+    {
+      "file": "laugh/frames/0161.png",
+      "removedPixels": 23
+    },
+    {
+      "file": "laugh/frames/0162.png",
+      "removedPixels": 13
+    },
+    {
+      "file": "laugh/frames/0163.png",
+      "removedPixels": 13
+    },
+    {
+      "file": "laugh/frames/0164.png",
+      "removedPixels": 21
+    },
+    {
+      "file": "laugh/frames/0165.png",
+      "removedPixels": 41
+    },
+    {
+      "file": "laugh/frames/0166.png",
+      "removedPixels": 83
+    },
+    {
+      "file": "laugh/frames/0167.png",
+      "removedPixels": 101
+    },
+    {
+      "file": "laugh/frames/0168.png",
+      "removedPixels": 101
+    },
+    {
+      "file": "laugh/frames/0169.png",
+      "removedPixels": 115
+    },
+    {
+      "file": "laugh/frames/0170.png",
+      "removedPixels": 117
+    },
+    {
+      "file": "laugh/frames/0171.png",
+      "removedPixels": 116
+    },
+    {
+      "file": "laugh/frames/0172.png",
+      "removedPixels": 109
+    },
+    {
+      "file": "laugh/frames/0173.png",
+      "removedPixels": 108
+    },
+    {
+      "file": "laugh/frames/0174.png",
+      "removedPixels": 108
+    },
+    {
+      "file": "laugh/frames/0175.png",
+      "removedPixels": 115
+    },
+    {
+      "file": "laugh/frames/0176.png",
+      "removedPixels": 131
+    },
+    {
+      "file": "laugh/frames/0177.png",
+      "removedPixels": 120
+    },
+    {
+      "file": "laugh/frames/0178.png",
+      "removedPixels": 119
+    },
+    {
+      "file": "laugh/frames/0179.png",
+      "removedPixels": 106
+    },
+    {
+      "file": "laugh/frames/0180.png",
+      "removedPixels": 93
+    },
+    {
+      "file": "laugh/frames/0181.png",
+      "removedPixels": 85
+    },
+    {
+      "file": "laugh/frames/0182.png",
+      "removedPixels": 88
+    },
+    {
+      "file": "laugh/frames/0183.png",
+      "removedPixels": 88
+    },
+    {
+      "file": "laugh/frames/0184.png",
+      "removedPixels": 86
+    },
+    {
+      "file": "laugh/frames/0185.png",
+      "removedPixels": 90
+    },
+    {
+      "file": "laugh/frames/0186.png",
+      "removedPixels": 90
+    },
+    {
+      "file": "laugh/frames/0187.png",
+      "removedPixels": 100
+    },
+    {
+      "file": "laugh/frames/0188.png",
+      "removedPixels": 100
+    },
+    {
+      "file": "laugh/frames/0189.png",
+      "removedPixels": 98
+    },
+    {
+      "file": "laugh/frames/0190.png",
+      "removedPixels": 92
+    },
+    {
+      "file": "laugh/frames/0191.png",
+      "removedPixels": 94
+    },
+    {
+      "file": "laugh/frames/0192.png",
+      "removedPixels": 87
+    },
+    {
+      "file": "laugh/frames/0193.png",
+      "removedPixels": 87
+    },
+    {
+      "file": "laugh/frames/0194.png",
+      "removedPixels": 91
+    },
+    {
+      "file": "laugh/frames/0195.png",
+      "removedPixels": 94
+    },
+    {
+      "file": "laugh/frames/0196.png",
+      "removedPixels": 98
+    },
+    {
+      "file": "laugh/frames/0197.png",
+      "removedPixels": 95
+    },
+    {
+      "file": "laugh/frames/0198.png",
+      "removedPixels": 95
+    },
+    {
+      "file": "laugh/frames/0199.png",
+      "removedPixels": 88
+    },
+    {
+      "file": "laugh/frames/0200.png",
+      "removedPixels": 171
+    },
+    {
+      "file": "laugh/frames/0201.png",
+      "removedPixels": 160
+    },
+    {
+      "file": "laugh/frames/0202.png",
+      "removedPixels": 4
+    },
+    {
+      "file": "laugh/frames/0203.png",
+      "removedPixels": 4
+    }
+  ]
+}

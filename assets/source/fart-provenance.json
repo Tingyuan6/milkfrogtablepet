@@ -1,0 +1,13 @@
+{
+  "name": "奶蛙",
+  "originalSha256": "8eddc45a8fe186c6f1c2fff0de83aec553c97623f29ccd9df71e4c78617c87e7",
+  "sourceStartMs": 9200,
+  "durationMs": 3000,
+  "crop": [
+    680,
+    380,
+    384,
+    284
+  ],
+  "purpose": "Green effect and audio only"
+}

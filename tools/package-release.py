@@ -8,8 +8,8 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT.parent / "outputs"
 OUTPUT.mkdir(exist_ok=True)
-VERSION = "0.3.1"
-ANDROID_VERSION = "0.3.0"  # This patch only changes the Windows host.
+VERSION = "0.4.0"
+ANDROID_VERSION = "0.4.0"
 PREFIX = "奶蛙V" + VERSION
 top = {".gitignore", ".gitattributes", "app.manifest", "README.md", "package.json", "pnpm-lock.yaml",
        "build-windows.ps1", "build-android.ps1", "test-java.ps1"}

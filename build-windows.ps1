@@ -18,6 +18,9 @@ $keep = New-Object 'System.Collections.Generic.HashSet[string]'
 [void]$keep.Add('manifest.json')
 [void]$keep.Add('face.json')
 [void]$keep.Add('audio/andi.wav')
+[void]$keep.Add('fart.json')
+[void]$keep.Add('audio/fart.wav')
+for($frame=0;$frame -lt 90;$frame++){[void]$keep.Add(('effects/fart/{0:000}.png' -f $frame))}
 foreach($pose in $manifest.poses.PSObject.Properties) { [void]$keep.Add($pose.Value.file) }
 foreach($clip in $manifest.clips) { foreach($file in $clip.files) { [void]$keep.Add($file) } }
 for($gx=0;$gx -lt 5;$gx++){for($gy=0;$gy -lt 5;$gy++){[void]$keep.Add("gaze/$($gx)_$($gy).png")}}
@@ -52,6 +55,12 @@ if ($Test) {
     & 'build/LaughTests.exe' (Join-Path $PSScriptRoot 'dist/windows/assets')
     if ($LASTEXITCODE -ne 0) { throw 'Laugh tests failed.' }
 
+}
+if ($Test) {
+    & $compiler /nologo /optimize+ /platform:x64 /target:exe /out:build/FartTests.exe @references @shared (Join-Path $PSScriptRoot 'tests/FartTests.cs')
+    if ($LASTEXITCODE -ne 0) { throw 'Fart tests compilation failed.' }
+    & 'build/FartTests.exe' (Join-Path $PSScriptRoot 'dist/windows/assets')
+    if ($LASTEXITCODE -ne 0) { throw 'Fart tests failed.' }
 }
 if ($NativeTest) {
     $probe = Start-Process -FilePath (Join-Path $PSScriptRoot 'dist/windows/奶蛙.exe') -ArgumentList @('--smoke-test','--data-dir',('"' + (Join-Path $PSScriptRoot 'build/native-test') + '"')) -WindowStyle Hidden -PassThru

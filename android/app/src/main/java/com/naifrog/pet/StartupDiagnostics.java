@@ -28,7 +28,7 @@ public final class StartupDiagnostics extends Application {
             StringWriter trace = new StringWriter();
             error.printStackTrace(new PrintWriter(trace));
             String report =
-                    "奶蛙 0.3.0 · "
+                    "奶蛙 0.4.0 · "
                             + stage
                             + "\n"
                             + Build.MANUFACTURER

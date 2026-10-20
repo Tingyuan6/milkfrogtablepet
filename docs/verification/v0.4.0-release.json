@@ -1,0 +1,45 @@
+{
+  "version": "0.4.0",
+  "character": "奶蛙",
+  "platforms": [
+    "Windows",
+    "Android"
+  ],
+  "durationMs": 3000,
+  "emitter": [
+    78,
+    250
+  ],
+  "hitEllipse": [
+    78,
+    248,
+    34,
+    28
+  ],
+  "csharpCoreChecks": 267,
+  "csharpFaceChecks": 617431,
+  "csharpLaughChecks": 16664,
+  "csharpFartChecks": 3028,
+  "javaFartChecks": 3028,
+  "fartAssetChecks": 282,
+  "laughAssetChecks": 7564,
+  "androidVersionCode": 7,
+  "androidRawAssetFilesVerified": 507,
+  "androidDeviceVerified": false,
+  "windowsFartNative": {
+    "passed": true,
+    "checks": 7,
+    "actualAudioDevice": true,
+    "physicalInputInjected": false
+  },
+  "windowsOriginalNative": {
+    "reactionStartsFromRightDock": true,
+    "clickStopAudioImmediate": true,
+    "restoresOriginalLayoutAndPosition": true,
+    "globalHooksInstallAndDispose": true,
+    "shellMetadataApiAvailable": true,
+    "triggerMethod": "Controlled host activation and cancellation; actual Explorer user double-click is still a manual acceptance item. No hardware input injection."
+  },
+  "sourceSegmentSha256": "d9237c7541cc0c598442cbd3b8dadcac3ec872bdfed8a09b9ab3a2b7f4cc9e4e",
+  "androidApkSha256": "d43d343e4b0c38ef9cb164554a05377610fe1c24e11cda356ed4147f5cf7b488"
+}

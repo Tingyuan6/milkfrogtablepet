@@ -1,0 +1,11 @@
+{
+  "checks": 282,
+  "durationMs": 3000,
+  "frames": 90,
+  "sourceStartMs": 0,
+  "leftPupilShiftPx": -6.321428571428584,
+  "blush": true,
+  "bodyPreserved": true,
+  "transparentBackground": true,
+  "sourceSha256": "d9237c7541cc0c598442cbd3b8dadcac3ec872bdfed8a09b9ab3a2b7f4cc9e4e"
+}
